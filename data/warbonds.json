@@ -1,0 +1,59 @@
+{
+  "warbonds": [
+    {
+      "id": "borderline-justice",
+      "name": "Borderline Justice",
+      "pages": 3
+    },
+    {
+      "id": "chemical-agents",
+      "name": "Chemical Agents",
+      "pages": 3
+    },
+    {
+      "id": "control-group",
+      "name": "Control Group",
+      "pages": 3
+    },
+    {
+      "id": "dust-devils",
+      "name": "Dust Devils",
+      "pages": 3
+    },
+    {
+      "id": "force-of-law",
+      "name": "Force of Law",
+      "pages": 3
+    },
+    {
+      "id": "masters-of-ceremony",
+      "name": "Masters of Ceremony",
+      "pages": 3
+    },
+    {
+      "id": "python-commandos",
+      "name": "Python Commandos",
+      "pages": 3
+    },
+    {
+      "id": "redacted-regiment",
+      "name": "Redacted Regiment",
+      "pages": 3
+    },
+    {
+      "id": "servants-of-freedom",
+      "name": "Servants of Freedom",
+      "pages": 3
+    },
+    {
+      "id": "siege-breakers",
+      "name": "Siege Breakers",
+      "pages": 3
+    },
+    {
+      "id": "urban-legends",
+      "name": "Urban Legends",
+      "pages": 3
+    }
+  ]
+}
