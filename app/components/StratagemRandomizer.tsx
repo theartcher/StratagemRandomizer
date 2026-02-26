@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Button,
   Card,
@@ -162,6 +162,30 @@ export default function StratagemRandomizer() {
   const [results, setResults] = useState<Stratagem[]>([]);
   const [rolled, setRolled] = useState(false);
 
+  // ── Slot machine ──────────────────────────────────────────────────────────
+  const [spinning, setSpinning] = useState(false);
+  /** Icon shown in each slot while spinning; null once locked */
+  const [displaySlots, setDisplaySlots] = useState<(Stratagem | null)[]>([
+    null,
+    null,
+    null,
+    null,
+  ]);
+  const [slotLocked, setSlotLocked] = useState<boolean[]>([
+    false,
+    false,
+    false,
+    false,
+  ]);
+  const [slotJustLocked, setSlotJustLocked] = useState<boolean[]>([
+    false,
+    false,
+    false,
+    false,
+  ]);
+  const lockedRef = useRef<boolean[]>([false, false, false, false]);
+  const spinIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
   // Load from localStorage after first client render
   useEffect(() => {
     setSelected(
@@ -243,7 +267,7 @@ export default function StratagemRandomizer() {
     // 1. Pick exactly the configured count from each named category
     for (const cat of CONFIGURED_CATEGORIES) {
       const count = activeCounts[cat];
-      if (count === null) continue; // unconstrained — handled in fill pass
+      if (count === null) continue;
       const catPool = shuffle(
         pool.filter((s) => s.category === cat && !usedIds.has(s.id)),
       );
@@ -263,21 +287,15 @@ export default function StratagemRandomizer() {
           (pickedPerCategory.get(s.category) ?? 0) + 1,
         );
       }
-
-      // Effective max per category during the fill pass
       const getEffectiveMax = (category: string): number => {
-        // Pinned categories: respect their exact count as a ceiling
         if ((CONFIGURED_CATEGORIES as readonly string[]).includes(category)) {
           const pinnedMax = activeCounts[category as ConfiguredCategory];
           if (pinnedMax !== null) return pinnedMax;
         }
-        // Apply active rules
         const rule = RULES.find((r) => r.category === category);
         if (rule && activeRules.has(rule.key)) return rule.max;
         return Infinity;
       };
-
-      // Pick one-by-one so pickedPerCategory stays accurate after each pick
       const candidates = shuffle(pool.filter((s) => !usedIds.has(s.id)));
       for (const s of candidates) {
         if (picked.length >= 4) break;
@@ -290,8 +308,68 @@ export default function StratagemRandomizer() {
       }
     }
 
+    // ── Slot machine animation ─────────────────────────────────────────────
     setResults(picked);
     setRolled(true);
+
+    if (picked.length === 0) return;
+
+    const slotCount = picked.length;
+
+    // Reset slots to exactly slotCount entries
+    if (spinIntervalRef.current) clearInterval(spinIntervalRef.current);
+    lockedRef.current = Array(slotCount).fill(false);
+    setSlotLocked(Array(slotCount).fill(false));
+    setSlotJustLocked(Array(slotCount).fill(false));
+    setDisplaySlots(Array(slotCount).fill(null));
+    setSpinning(true);
+
+    // Cycle random icons at 80 ms on every unlocked slot
+    spinIntervalRef.current = setInterval(() => {
+      setDisplaySlots(
+        lockedRef.current.map((locked) =>
+          locked
+            ? null
+            : allStratagems[Math.floor(Math.random() * allStratagems.length)],
+        ) as (Stratagem | null)[],
+      );
+    }, 80);
+
+    // Lock slots one by one, staggered — only up to slotCount
+    const lockDelays = [1000, 1500, 2000, 2500].slice(0, slotCount);
+    lockDelays.forEach((delay, i) => {
+      setTimeout(() => {
+        lockedRef.current[i] = true;
+        setSlotLocked((prev) => {
+          const n = [...prev];
+          n[i] = true;
+          return n;
+        });
+        setSlotJustLocked((prev) => {
+          const n = [...prev];
+          n[i] = true;
+          return n;
+        });
+        // Remove flash after 400 ms
+        setTimeout(
+          () =>
+            setSlotJustLocked((prev) => {
+              const n = [...prev];
+              n[i] = false;
+              return n;
+            }),
+          400,
+        );
+      }, delay);
+    });
+
+    // Stop interval after the last slot locks
+    const lastLock = lockDelays[lockDelays.length - 1];
+    setTimeout(() => {
+      if (spinIntervalRef.current) clearInterval(spinIntervalRef.current);
+      spinIntervalRef.current = null;
+      setSpinning(false);
+    }, lastLock + 200);
   };
 
   // ── Render ────────────────────────────────────────────────────────────────
@@ -432,7 +510,7 @@ export default function StratagemRandomizer() {
         {/* ── Stratagem slot counts ─────────────────────────────────────── */}
         <Card
           title={
-            <Space size={4} direction="vertical" style={{ gap: 0 }}>
+            <Space size={4} orientation="vertical" style={{ gap: 0 }}>
               <span>Pin Slot Types</span>
               {!isMobile && (
                 <Text
@@ -483,7 +561,7 @@ export default function StratagemRandomizer() {
               return (
                 <Col key={cat} xs={12} sm={8}>
                   <Space
-                    direction="vertical"
+                    orientation="vertical"
                     size={4}
                     style={{ width: "100%" }}
                   >
@@ -561,14 +639,14 @@ export default function StratagemRandomizer() {
           </Row>
         </Card>
 
-        {/* ── Trigger ──────────────────────────────────────────────────── */}
-        <div style={{ textAlign: "center", marginBottom: 32 }}>
+        {/* ── Slot Machine ─────────────────────────────────────────────── */}
+        <div style={{ textAlign: "center", marginBottom: rolled ? 24 : 32 }}>
           <Button
             type="primary"
             size="large"
             icon={<ThunderboltOutlined />}
             onClick={randomize}
-            disabled={activeSelected.size === 0 || configOverLimit}
+            disabled={spinning || activeSelected.size === 0 || configOverLimit}
             style={{
               height: 52,
               width: isMobile ? "100%" : undefined,
@@ -579,11 +657,14 @@ export default function StratagemRandomizer() {
               textTransform: "uppercase",
             }}
           >
-            Randomize my stratagems!
+            {spinning
+              ? "Deploying..."
+              : rolled
+                ? "Re-deploy"
+                : "Deploy Stratagems!"}
           </Button>
         </div>
 
-        {/* Results */}
         {rolled && (
           <>
             <Divider style={{ borderColor: HD_BORDER }}>
@@ -599,55 +680,154 @@ export default function StratagemRandomizer() {
               </Text>
             </Divider>
 
-            {results.length === 0 ? (
+            {!spinning && results.length === 0 ? (
               <Text type="secondary">
                 No stratagems available for the selected warbonds.
               </Text>
             ) : (
-              <Row gutter={[16, 16]}>
-                {results.map((s) => (
-                  <Col key={s.id} xs={24} sm={12}>
-                    <Card
-                      title={s.name}
-                      size="small"
-                      style={{ borderColor: HD_BORDER }}
-                      extra={
-                        <Tag color={CATEGORY_COLOR[s.category] ?? "default"}>
-                          {s.category.replace(/_/g, " ")}
-                        </Tag>
-                      }
-                    >
-                      {/* Directional code */}
-                      <Space size={6} wrap>
-                        {s.code.map((dir, i) => (
-                          <span
-                            key={i}
-                            style={{
-                              fontSize: 20,
-                              lineHeight: 1,
-                              padding: "4px 8px",
-                              background: "#1a1a0e",
-                              border: `1px solid ${HD_BORDER}`,
-                              color: HD_YELLOW,
-                              borderRadius: 2,
-                              display: "inline-flex",
-                              alignItems: "center",
-                            }}
-                          >
-                            {DIRECTION_ICON[dir] ?? dir}
-                          </span>
-                        ))}
-                      </Space>
+              <Row
+                gutter={[12, 12]}
+                align="stretch"
+                style={{ alignItems: "stretch" }}
+              >
+                {Array.from({ length: results.length }, (_, i) => {
+                  const locked = slotLocked[i] ?? false;
+                  const justLocked = slotJustLocked[i] ?? false;
+                  // locked slots show the final result; spinning slots show the cycling icon
+                  const s: Stratagem | null = locked
+                    ? (results[i] ?? null)
+                    : displaySlots[i];
+                  return (
+                    <Col key={i} xs={12} sm={6} style={{ display: "flex" }}>
+                      <div
+                        style={{
+                          border: `2px solid ${
+                            justLocked
+                              ? "#ffffff"
+                              : locked
+                                ? HD_YELLOW
+                                : HD_BORDER
+                          }`,
+                          borderRadius: 4,
+                          background: justLocked ? "#1f1c00" : HD_CARD_BG,
+                          transition: "border-color 0.25s, background 0.3s",
+                          padding: isMobile ? "10px 6px" : "16px 12px",
+                          flex: 1,
+                          display: "flex",
+                          flexDirection: "column",
+                          alignItems: "center",
+                          gap: 8,
+                          overflow: "hidden",
+                        }}
+                      >
+                        {/* Icon */}
+                        <div
+                          style={{
+                            width: isMobile ? 56 : 80,
+                            height: isMobile ? 56 : 80,
+                            flexShrink: 0,
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            filter: locked
+                              ? "none"
+                              : "grayscale(1) brightness(0.35)",
+                            transition: "filter 0.2s",
+                          }}
+                        >
+                          {s ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img
+                              src={`/icons/${s.id}.svg`}
+                              alt=""
+                              width={isMobile ? 56 : 80}
+                              height={isMobile ? 56 : 80}
+                              style={{ objectFit: "contain", display: "block" }}
+                              onError={(e) => {
+                                (
+                                  e.currentTarget as HTMLImageElement
+                                ).style.display = "none";
+                              }}
+                            />
+                          ) : (
+                            <div
+                              style={{
+                                width: isMobile ? 56 : 80,
+                                height: isMobile ? 56 : 80,
+                                border: `1px solid ${HD_BORDER}`,
+                                borderRadius: 2,
+                              }}
+                            />
+                          )}
+                        </div>
 
-                      {/* Warbond badge */}
-                      <div style={{ marginTop: 8 }}>
-                        <Text type="secondary" style={{ fontSize: 12 }}>
-                          {s.warbond ?? "Base Game"}
+                        {/* Name — fixed 2-line height so all cards stay the same */}
+                        <Text
+                          strong
+                          style={{
+                            color: locked ? HD_TEXT : "#3a3a3a",
+                            textAlign: "center",
+                            fontSize: isMobile ? 11 : 13,
+                            lineHeight: 1.3,
+                            height: isMobile ? 29 : 34,
+                            overflow: "hidden",
+                            display: "-webkit-box",
+                            WebkitLineClamp: 2,
+                            WebkitBoxOrient: "vertical",
+                            width: "100%",
+                            transition: "color 0.2s",
+                          }}
+                        >
+                          {locked && s ? s.name : "\u2014 \u2014 \u2014"}
                         </Text>
+
+                        {/* Details: revealed on lock */}
+                        {locked && s && (
+                          <>
+                            <Tag
+                              color={CATEGORY_COLOR[s.category] ?? "default"}
+                              style={{ margin: 0 }}
+                            >
+                              {s.category.replace(/_/g, " ")}
+                            </Tag>
+                            {/* Arrows */}
+                            <div
+                              style={{
+                                display: "flex",
+                                flexWrap: "wrap",
+                                gap: 4,
+                                justifyContent: "center",
+                                alignContent: "center",
+                              }}
+                            >
+                              {s.code.map((dir, j) => (
+                                <span
+                                  key={j}
+                                  style={{
+                                    fontSize: isMobile ? 13 : 18,
+                                    lineHeight: 1,
+                                    padding: isMobile ? "3px 5px" : "4px 8px",
+                                    background: "#1a1a0e",
+                                    border: `1px solid ${HD_BORDER}`,
+                                    color: HD_YELLOW,
+                                    borderRadius: 2,
+                                    display: "inline-flex",
+                                    alignItems: "center",
+                                  }}
+                                >
+                                  {DIRECTION_ICON[dir] ?? dir}
+                                </span>
+                              ))}
+                            </div>
+                            <Text type="secondary" style={{ fontSize: 11 }}>
+                              {s.warbond ?? "Base Game"}
+                            </Text>
+                          </>
+                        )}
                       </div>
-                    </Card>
-                  </Col>
-                ))}
+                    </Col>
+                  );
+                })}
               </Row>
             )}
           </>
