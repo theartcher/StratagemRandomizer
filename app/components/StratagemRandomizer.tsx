@@ -57,6 +57,7 @@ const DEFAULT_COUNTS: CategoryCounts = {
   sentry: null,
   vehicle: null,
   emplacement: null,
+  support_weapon: null,
 };
 
 const CONFIGURED_CATEGORIES = [
@@ -65,6 +66,7 @@ const CONFIGURED_CATEGORIES = [
   "sentry",
   "vehicle",
   "emplacement",
+  "support_weapon",
 ] as const;
 type ConfiguredCategory = (typeof CONFIGURED_CATEGORIES)[number];
 
@@ -74,19 +76,12 @@ const CATEGORY_LABELS: Record<ConfiguredCategory, string> = {
   sentry: "Sentries",
   vehicle: "Vehicles",
   emplacement: "Mines & Emplacements",
+  support_weapon: "Support Weapons",
 };
 
 // ── Rules ─────────────────────────────────────────────────────────────────────
 
 const RULES = [
-  {
-    key: "no_double_support",
-    label: "Singular support weapon",
-    description:
-      "Support weapons share a slot, so you can only have one of them.",
-    category: "support_weapon",
-    max: 1,
-  },
   {
     key: "no_double_backpack",
     label: "Singular backpack",
@@ -98,7 +93,7 @@ const RULES = [
 
 type RuleKey = (typeof RULES)[number]["key"];
 
-const DEFAULT_RULES: RuleKey[] = ["no_double_support", "no_double_backpack"];
+const DEFAULT_RULES: RuleKey[] = ["no_double_backpack"];
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -738,7 +733,7 @@ export default function StratagemRandomizer() {
                           {s ? (
                             // eslint-disable-next-line @next/next/no-img-element
                             <img
-                              src={`/icons/${s.id}.svg`}
+                              src={`${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/icons/${s.id}.svg`}
                               alt=""
                               width={isMobile ? 56 : 80}
                               height={isMobile ? 56 : 80}
