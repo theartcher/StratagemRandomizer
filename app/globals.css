@@ -9,7 +9,23 @@ body {
   min-height: 100vh;
   max-width: 100vw;
   overflow-x: hidden;
-  background: #f0f2f5;
+  background: #0d0d0d;
+  color: #e8dfc8;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/* Prevent antd card headers overflowing on small screens */
+.ant-card-head {
+  flex-wrap: wrap;
+  min-height: unset !important;
+}
+
+.ant-card-head-title {
+  min-width: 0;
+}
+
+.ant-card-extra {
+  max-width: 50%;
+  overflow: hidden;
 }
