@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import {
   Button,
   Card,
@@ -10,136 +10,47 @@ import {
   Divider,
   Grid,
   Row,
+  Slider,
   Space,
   Switch,
   Tag,
   Typography,
   theme as antdTheme,
 } from "antd";
-import {
-  ArrowDownOutlined,
-  ArrowLeftOutlined,
-  ArrowRightOutlined,
-  ArrowUpOutlined,
-  ThunderboltOutlined,
-} from "@ant-design/icons";
+import { ThunderboltOutlined } from "@ant-design/icons";
 
 import warbondsData from "@/data/warbonds.json";
 import stratagemsData from "@/data/stratagems.json";
 
+import {
+  CONFIGURED_CATEGORIES,
+  RULES,
+  type Stratagem,
+} from "@/app/types/stratagem";
+import {
+  HD_BG,
+  HD_BORDER,
+  HD_CARD_BG,
+  HD_TEXT,
+  HD_YELLOW,
+} from "@/app/constants/theme";
+import {
+  CATEGORY_COLOR,
+  CATEGORY_LABELS,
+  DEFAULT_COUNTS,
+} from "@/app/constants/categories";
+import { DEFAULT_RULES } from "@/app/constants/rules";
+import {
+  ALL_KEYS,
+  BASE_GAME_KEY,
+  DEFAULT_PLAYER_LEVEL,
+  MAX_PLAYER_LEVEL,
+} from "@/app/constants/storage";
+import { DIRECTION_ICON } from "@/app/constants/icons";
+import { pickStratagems } from "@/app/services/randomizer";
+import { useStratagemSettings } from "@/app/hooks/useStratagemSettings";
+
 const { Title, Text } = Typography;
-
-// ── Types ────────────────────────────────────────────────────────────────────
-
-interface Stratagem {
-  id: string;
-  name: string;
-  code: string[];
-  category: string;
-  warbond: string | null;
-}
-
-/** null = unconstrained (pick freely); number = exact count required */
-type CategoryCounts = Record<ConfiguredCategory, number | null>;
-
-// ── Constants ────────────────────────────────────────────────────────────────
-
-const BASE_GAME_KEY = "__base_game__";
-const STORAGE_KEY_WARBONDS = "stratagem-randomizer-warbonds";
-const STORAGE_KEY_COUNTS = "stratagem-randomizer-counts";
-const STORAGE_KEY_RULES = "stratagem-randomizer-rules";
-
-const ALL_KEYS = [BASE_GAME_KEY, ...warbondsData.warbonds.map((w) => w.id)];
-
-const DEFAULT_COUNTS: CategoryCounts = {
-  orbital: null,
-  eagle: null,
-  sentry: null,
-  vehicle: null,
-  emplacement: null,
-  support_weapon: null,
-};
-
-const CONFIGURED_CATEGORIES = [
-  "orbital",
-  "eagle",
-  "sentry",
-  "vehicle",
-  "emplacement",
-  "support_weapon",
-] as const;
-type ConfiguredCategory = (typeof CONFIGURED_CATEGORIES)[number];
-
-const CATEGORY_LABELS: Record<ConfiguredCategory, string> = {
-  orbital: "Orbitals",
-  eagle: "Eagles",
-  sentry: "Sentries",
-  vehicle: "Vehicles",
-  emplacement: "Mines & Emplacements",
-  support_weapon: "Support Weapons",
-};
-
-// ── Rules ─────────────────────────────────────────────────────────────────────
-
-const RULES = [
-  {
-    key: "no_double_backpack",
-    label: "Singular backpack",
-    description: "You've only got one back to carry with.",
-    category: "backpack",
-    max: 1,
-  },
-] as const;
-
-type RuleKey = (typeof RULES)[number]["key"];
-
-const DEFAULT_RULES: RuleKey[] = ["no_double_backpack"];
-
-// ── Helpers ──────────────────────────────────────────────────────────────────
-
-function loadFromStorage<T>(key: string, fallback: T): T {
-  try {
-    const raw = localStorage.getItem(key);
-    if (raw !== null) return JSON.parse(raw) as T;
-  } catch {
-    // ignore malformed data
-  }
-  return fallback;
-}
-
-const DIRECTION_ICON: Record<string, React.ReactNode> = {
-  up: <ArrowUpOutlined />,
-  down: <ArrowDownOutlined />,
-  left: <ArrowLeftOutlined />,
-  right: <ArrowRightOutlined />,
-};
-
-const CATEGORY_COLOR: Record<string, string> = {
-  support_weapon: "blue",
-  backpack: "green",
-  eagle: "gold",
-  orbital: "purple",
-  sentry: "cyan",
-  emplacement: "orange",
-  vehicle: "volcano",
-};
-
-// Helldivers theme tokens
-const HD_YELLOW = "#ffd200";
-const HD_BG = "#0d0d0d";
-const HD_CARD_BG = "#161616";
-const HD_BORDER = "#2e2b22";
-const HD_TEXT = "#e8dfc8";
-
-/** Fisher-Yates shuffle — returns a new array */
-function shuffle<T>(arr: T[]): T[] {
-  const a = [...arr];
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]];
-  }
-  return a;
-}
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
@@ -150,10 +61,17 @@ export default function StratagemRandomizer() {
   const allWarbonds = warbondsData.warbonds;
   const allStratagems = stratagemsData.stratagems as Stratagem[];
 
-  // null = not yet hydrated from localStorage (avoids SSR/client mismatch)
-  const [selected, setSelected] = useState<Set<string> | null>(null);
-  const [counts, setCounts] = useState<CategoryCounts | null>(null);
-  const [rules, setRules] = useState<Set<RuleKey> | null>(null);
+  const {
+    selected,
+    setSelected,
+    counts,
+    setCounts,
+    rules,
+    setRules,
+    level,
+    setLevel,
+  } = useStratagemSettings();
+
   const [results, setResults] = useState<Stratagem[]>([]);
   const [rolled, setRolled] = useState(false);
 
@@ -181,41 +99,11 @@ export default function StratagemRandomizer() {
   const lockedRef = useRef<boolean[]>([false, false, false, false]);
   const spinIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Load from localStorage after first client render
-  useEffect(() => {
-    setSelected(
-      new Set(loadFromStorage<string[]>(STORAGE_KEY_WARBONDS, ALL_KEYS)),
-    );
-    setCounts(
-      loadFromStorage<CategoryCounts>(STORAGE_KEY_COUNTS, DEFAULT_COUNTS),
-    );
-    setRules(
-      new Set(loadFromStorage<RuleKey[]>(STORAGE_KEY_RULES, DEFAULT_RULES)),
-    );
-  }, []);
-
-  // Persist warbond selection
-  useEffect(() => {
-    if (selected === null) return;
-    localStorage.setItem(STORAGE_KEY_WARBONDS, JSON.stringify([...selected]));
-  }, [selected]);
-
-  // Persist counts
-  useEffect(() => {
-    if (counts === null) return;
-    localStorage.setItem(STORAGE_KEY_COUNTS, JSON.stringify(counts));
-  }, [counts]);
-
-  // Persist rules
-  useEffect(() => {
-    if (rules === null) return;
-    localStorage.setItem(STORAGE_KEY_RULES, JSON.stringify([...rules]));
-  }, [rules]);
-
   // Use defaults while waiting for hydration
   const activeSelected = selected ?? new Set(ALL_KEYS);
   const activeCounts = counts ?? DEFAULT_COUNTS;
   const activeRules = rules ?? new Set(DEFAULT_RULES);
+  const activeLevel = level ?? DEFAULT_PLAYER_LEVEL;
 
   const totalConfigured = CONFIGURED_CATEGORIES.reduce(
     (sum, cat) => sum + (activeCounts[cat] ?? 0),
@@ -236,10 +124,12 @@ export default function StratagemRandomizer() {
   const selectAll = () => setSelected(new Set(ALL_KEYS));
   const deselectAll = () => setSelected(new Set());
 
-  const setCount = (cat: ConfiguredCategory, value: number) =>
-    setCounts((prev) => ({ ...(prev ?? DEFAULT_COUNTS), [cat]: value }));
+  const setCount = (
+    cat: (typeof CONFIGURED_CATEGORIES)[number],
+    value: number,
+  ) => setCounts((prev) => ({ ...(prev ?? DEFAULT_COUNTS), [cat]: value }));
 
-  const toggleRule = (key: RuleKey) =>
+  const toggleRule = (key: (typeof RULES)[number]["key"]) =>
     setRules((prev) => {
       const base = prev ?? new Set(DEFAULT_RULES);
       const next = new Set(base);
@@ -256,52 +146,12 @@ export default function StratagemRandomizer() {
       return warbond ? activeSelected.has(warbond.id) : false;
     });
 
-    const picked: Stratagem[] = [];
-    const usedIds = new Set<string>();
-
-    // 1. Pick exactly the configured count from each named category
-    for (const cat of CONFIGURED_CATEGORIES) {
-      const count = activeCounts[cat];
-      if (count === null) continue;
-      const catPool = shuffle(
-        pool.filter((s) => s.category === cat && !usedIds.has(s.id)),
-      );
-      for (const s of catPool.slice(0, count)) {
-        picked.push(s);
-        usedIds.add(s.id);
-      }
-    }
-
-    // 2. Fill remaining slots
-    const remaining = 4 - picked.length;
-    if (remaining > 0) {
-      const pickedPerCategory = new Map<string, number>();
-      for (const s of picked) {
-        pickedPerCategory.set(
-          s.category,
-          (pickedPerCategory.get(s.category) ?? 0) + 1,
-        );
-      }
-      const getEffectiveMax = (category: string): number => {
-        if ((CONFIGURED_CATEGORIES as readonly string[]).includes(category)) {
-          const pinnedMax = activeCounts[category as ConfiguredCategory];
-          if (pinnedMax !== null) return pinnedMax;
-        }
-        const rule = RULES.find((r) => r.category === category);
-        if (rule && activeRules.has(rule.key)) return rule.max;
-        return Infinity;
-      };
-      const candidates = shuffle(pool.filter((s) => !usedIds.has(s.id)));
-      for (const s of candidates) {
-        if (picked.length >= 4) break;
-        const max = getEffectiveMax(s.category);
-        const current = pickedPerCategory.get(s.category) ?? 0;
-        if (current >= max) continue;
-        picked.push(s);
-        usedIds.add(s.id);
-        pickedPerCategory.set(s.category, current + 1);
-      }
-    }
+    const picked = pickStratagems({
+      pool,
+      counts: activeCounts,
+      rules: activeRules,
+      playerLevel: activeLevel,
+    });
 
     // ── Slot machine animation ─────────────────────────────────────────────
     setResults(picked);
@@ -418,6 +268,58 @@ export default function StratagemRandomizer() {
           <ThunderboltOutlined style={{ marginRight: 10 }} />
           Stratagem Randomizer
         </Title>
+
+        {/* ── Player level ──────────────────────────────────────────────── */}
+        <Card
+          title="Player Level"
+          style={{ marginBottom: 24, borderColor: HD_BORDER }}
+          extra={
+            <Text
+              strong
+              style={{
+                color: HD_YELLOW,
+                fontSize: 15,
+                letterSpacing: "0.06em",
+              }}
+            >
+              {activeLevel >= MAX_PLAYER_LEVEL
+                ? `${MAX_PLAYER_LEVEL}+`
+                : `${activeLevel}`}
+            </Text>
+          }
+        >
+          <div style={{ padding: isMobile ? "0 8px" : "0 16px" }}>
+            <Slider
+              min={1}
+              max={MAX_PLAYER_LEVEL}
+              value={activeLevel}
+              onChange={(v) => setLevel(v)}
+              marks={{
+                1: "1",
+                5: "5",
+                10: "10",
+                15: "15",
+                20: "20",
+                25: "25+",
+              }}
+              tooltip={{
+                formatter: (v) =>
+                  v !== undefined && v >= MAX_PLAYER_LEVEL
+                    ? `${v}+ (all unlocked)`
+                    : `${v}`,
+              }}
+            />
+          </div>
+          {activeLevel < MAX_PLAYER_LEVEL && (
+            <Text
+              type="secondary"
+              style={{ fontSize: 11, marginTop: 8, display: "block" }}
+            >
+              Stratagems with an unlock level above {activeLevel} are excluded
+              from the pool.
+            </Text>
+          )}
+        </Card>
 
         {/* ── Warbond selection ─────────────────────────────────────────── */}
         <Card
@@ -603,6 +505,21 @@ export default function StratagemRandomizer() {
                       }}
                     >
                       {isMobile ? "Any" : "Any amount"}
+                    </Button>
+
+                    {/* 0 = exclude this category entirely */}
+                    <Button
+                      key={0}
+                      type={enabled && current === 0 ? "primary" : "default"}
+                      onClick={() => setCount(cat, 0)}
+                      style={{
+                        width: "100%",
+                        height: isMobile ? 36 : 44,
+                        fontSize: isMobile ? 16 : 20,
+                        fontWeight: 800,
+                      }}
+                    >
+                      0
                     </Button>
 
                     {[1, 2, 3, 4].map((n) => {

@@ -58,6 +58,6 @@ Some stratagems are locked behind purchasable expansions called **Warbonds**. Th
 
 Future work
 
-- Level slider? Only include warbonds + under selected level
+- [x] Level slider — filters pool to stratagems at or below the selected level
 - Select categories, e.g. 2 orbitals and 2 eagles
 - Exclude specific stratagems (e.g. no mines)
