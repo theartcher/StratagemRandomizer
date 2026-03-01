@@ -1,9 +1,9 @@
 name: Check for New Stratagems
 
 on:
-  schedule:
-    # Run every 24 hours at 06:00 UTC
-    - cron: "0 6 * * *"
+  push:
+    branches:
+      - icon-test
   workflow_dispatch: # Allow manual trigger
 
 permissions:

@@ -1153,30 +1153,6 @@
       "warbond": null,
       "warbond_page": null,
       "ship_module": "Hangar"
-    },
-    {
-      "id": "td-220-bastion-mk-xvi",
-      "name": "TD-220 Bastion MK XVI",
-      "code": [
-        "left",
-        "down",
-        "right",
-        "down",
-        "left",
-        "down",
-        "up",
-        "down",
-        "up"
-      ],
-      "category": "vehicle",
-      "subcategory": null,
-      "requires_backpack": false,
-      "cost_type": "requisition_slips",
-      "cost_amount": 35000,
-      "unlock_level": 1,
-      "warbond": null,
-      "warbond_page": null,
-      "ship_module": "Hangar"
     }
   ]
 }
