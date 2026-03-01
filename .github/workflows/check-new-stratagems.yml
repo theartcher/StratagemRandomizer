@@ -64,7 +64,7 @@ jobs:
           commit-message: "feat: Add new stratagem(s): ${{ steps.check.outputs.new_names }}"
           title: "feat: Add ${{ steps.check.outputs.new_count }} new stratagem(s)"
           body: |
-            ## New Stratagem(s) Detected
+            ## New Stratagem(s) Detected ⚡
 
             The automated wiki check found **${{ steps.check.outputs.new_count }}** new stratagem(s) on the [Helldivers Wiki](https://helldivers.wiki.gg/wiki/Stratagems):
 
