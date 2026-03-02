@@ -462,15 +462,40 @@ async function fetchReadmeIconList() {
 
 /**
  * Compare the README icon list against our ICON_MAP to determine if the
- * upstream repo has new icons we don't have mapped yet.
+ * upstream repo has new icons that can be matched to our stratagems.
  *
  * @param {Set<string>} readmeIcons - icons parsed from the README
- * @returns {{ newIcons: string[], changed: boolean }}
+ * @param {string[]} stratagemIds - all local stratagem IDs
+ * @returns {{ newIcons: string[], matchableIcons: string[], unmatchableIcons: string[], missingLocal: string[], changed: boolean }}
  */
-function checkForNewIcons(readmeIcons) {
+function checkForNewIcons(readmeIcons, stratagemIds) {
   const mappedKeys = new Set(Object.keys(ICON_MAP));
   const newIcons = [...readmeIcons].filter((icon) => !mappedKeys.has(icon));
-  return { newIcons, changed: newIcons.length > 0 };
+
+  // Pre-match new icons against local stratagem IDs using the same auto-match logic
+  const matchableIcons = [];
+  const unmatchableIcons = [];
+  for (const icon of newIcons) {
+    const iconBaseName = basename(icon, extname(icon));
+    const candidate = toKebabCase(iconBaseName);
+    const matched = stratagemIds.some(
+      (id) =>
+        id === candidate || id.includes(candidate) || candidate.includes(id),
+    );
+    if (matched) {
+      matchableIcons.push(icon);
+    } else {
+      unmatchableIcons.push(icon);
+    }
+  }
+
+  // Check if any local stratagems are missing icons on disk
+  const missingLocal = stratagemIds.filter(
+    (id) => !existsSync(join(ICON_OUT_DIR, `${id}.svg`)),
+  );
+
+  const changed = matchableIcons.length > 0 || missingLocal.length > 0;
+  return { newIcons, matchableIcons, unmatchableIcons, missingLocal, changed };
 }
 
 /**
@@ -514,11 +539,34 @@ async function updateIcons(stratagemIds, force = false) {
   // ── Pre-check: compare README icon list against ICON_MAP ───────────────────
   if (!force) {
     const readmeIcons = await fetchReadmeIconList();
-    const { newIcons, changed } = checkForNewIcons(readmeIcons);
+    const {
+      newIcons,
+      matchableIcons,
+      unmatchableIcons,
+      missingLocal,
+      changed,
+    } = checkForNewIcons(readmeIcons, stratagemIds);
+
+    if (newIcons.length > 0) {
+      console.log(`      ${newIcons.length} new icon(s) detected in README:`);
+      newIcons.forEach((i) => console.log(`        ${i}`));
+    }
+    if (unmatchableIcons.length > 0) {
+      console.log(
+        `      ${unmatchableIcons.length} new icon(s) don't match any local stratagem (manual ICON_MAP entry needed if relevant):`,
+      );
+      unmatchableIcons.forEach((i) => console.log(`        ${i}`));
+    }
+    if (missingLocal.length > 0) {
+      console.log(
+        `      ${missingLocal.length} local stratagem(s) missing icons:`,
+      );
+      missingLocal.forEach((id) => console.log(`        ${id}`));
+    }
 
     if (!changed) {
       console.log(
-        "      No new icons in upstream repo. Skipping ZIP download.",
+        "      No actionable icon changes found. Skipping ZIP download.",
       );
       return {
         copied: 0,
@@ -529,8 +577,12 @@ async function updateIcons(stratagemIds, force = false) {
       };
     }
 
-    console.log(`      ${newIcons.length} new icon(s) detected in README:`);
-    newIcons.forEach((i) => console.log(`        ${i}`));
+    if (matchableIcons.length > 0) {
+      console.log(
+        `      ${matchableIcons.length} matchable icon(s) to download:`,
+      );
+      matchableIcons.forEach((i) => console.log(`        ${i}`));
+    }
   }
 
   const tempDir = join(tmpdir(), `hd2-icons-${randomBytes(4).toString("hex")}`);

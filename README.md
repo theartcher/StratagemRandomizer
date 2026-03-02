@@ -153,8 +153,10 @@ We welcome contributions from the community! Please see the [Development](#devel
 
 **Current Team:**
 
-- Joris Brugman (Lead Developer)
-- Robin Hendrikx (UX Testing and Feedback)
+- [Joris](https://github.com/theartcher) (Lead Developer)
+- [Robin](https://github.com/NasiHond) (UX Testing and Feedback)
+
+Special thanks to nvigneux for [providing the icon repository](https://github.com/nvigneux/Helldivers-2-Stratagems-icons-svg?tab=readme-ov-file) and the community for maintaining [the stratagem wiki](https://helldivers.wiki.gg/wiki/Stratagems).
 
 ## New Stratagem Procedure
 
