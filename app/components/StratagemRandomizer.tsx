@@ -25,6 +25,8 @@ import {
   ALL_KEYS,
   BASE_GAME_KEY,
   DEFAULT_PLAYER_LEVEL,
+  STORAGE_KEY_LEVEL,
+  STORAGE_KEY_WARBONDS,
 } from "@/app/constants/storage";
 import PlayerLevelCard from "@/app/components/ui/PlayerLevelCard";
 import TitleSection from "@/app/components/ui/TitleSection";
@@ -57,6 +59,7 @@ export default function StratagemRandomizer() {
     setRules,
     level,
     setLevel,
+    savedKeys,
   } = useStratagemSettings();
 
   const [results, setResults] = useState<Stratagem[]>([]);
@@ -85,8 +88,10 @@ export default function StratagemRandomizer() {
   ]);
   const lockedRef = useRef<boolean[]>([false, false, false, false]);
   const spinIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const resultsRef = useRef<HTMLDivElement>(null);
 
   // Use defaults while waiting for hydration
+  const hydrated = savedKeys !== null;
   const activeSelected = selected ?? new Set(ALL_KEYS);
   const activeCounts = counts ?? DEFAULT_COUNTS;
   const activeRules = rules ?? new Set(DEFAULT_RULES);
@@ -151,6 +156,14 @@ export default function StratagemRandomizer() {
     setDisplaySlots(Array(slotCount).fill(null));
     setSpinning(true);
 
+    // Scroll results into view
+    setTimeout(() => {
+      resultsRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    }, 100);
+
     // Cycle random icons at 80 ms on every unlocked slot
     spinIntervalRef.current = setInterval(() => {
       setDisplaySlots(
@@ -196,6 +209,13 @@ export default function StratagemRandomizer() {
       if (spinIntervalRef.current) clearInterval(spinIntervalRef.current);
       spinIntervalRef.current = null;
       setSpinning(false);
+      // Re-scroll after final cards render (they're taller than the spinning placeholders)
+      setTimeout(() => {
+        resultsRef.current?.scrollIntoView({
+          behavior: "smooth",
+          block: "start",
+        });
+      }, 50);
     }, lastLock + 200);
   };
 
@@ -228,14 +248,23 @@ export default function StratagemRandomizer() {
       >
         <TitleSection />
 
-        <PlayerLevelCard level={activeLevel} onChange={(v) => setLevel(v)} />
+        {hydrated && (
+          <>
+            <PlayerLevelCard
+              level={activeLevel}
+              onChange={(v) => setLevel(v)}
+              defaultCollapsed={savedKeys.has(STORAGE_KEY_LEVEL)}
+            />
 
-        <WarBondsCard
-          selected={activeSelected}
-          onToggle={toggle}
-          onSelectAll={selectAll}
-          onDeselectAll={deselectAll}
-        />
+            <WarBondsCard
+              selected={activeSelected}
+              onToggle={toggle}
+              onSelectAll={selectAll}
+              onDeselectAll={deselectAll}
+              defaultCollapsed={savedKeys.has(STORAGE_KEY_WARBONDS)}
+            />
+          </>
+        )}
 
         <RulesCard activeRules={activeRules} onToggle={toggleRule} />
 
@@ -254,14 +283,37 @@ export default function StratagemRandomizer() {
           onClick={randomize}
         />
 
-        <SlotMachineResults
-          rolled={rolled}
-          spinning={spinning}
-          results={results}
-          displaySlots={displaySlots}
-          slotLocked={slotLocked}
-          slotJustLocked={slotJustLocked}
-        />
+        <div ref={resultsRef}>
+          <SlotMachineResults
+            rolled={rolled}
+            spinning={spinning}
+            results={results}
+            displaySlots={displaySlots}
+            slotLocked={slotLocked}
+            slotJustLocked={slotJustLocked}
+          />
+        </div>
+
+        <footer
+          style={{
+            marginTop: 48,
+            paddingTop: 16,
+            borderTop: "1px solid #222",
+            textAlign: "center",
+            fontSize: 12,
+            color: "#555",
+          }}
+        >
+          Joris Brugman &middot;{" "}
+          <a
+            href="https://github.com/theartcher/StratagemRandomizer"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ color: "#555", textDecoration: "underline" }}
+          >
+            GitHub
+          </a>
+        </footer>
       </div>
     </ConfigProvider>
   );

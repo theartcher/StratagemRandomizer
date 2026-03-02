@@ -26,9 +26,19 @@ export function useStratagemSettings() {
   const [rules, setRules] = useState<Set<RuleKey> | null>(null);
   // null = not yet hydrated; number once loaded
   const [level, setLevel] = useState<number | null>(null);
+  // Track which keys were already saved in localStorage at hydration time
+  // null = not yet hydrated
+  const [savedKeys, setSavedKeys] = useState<Set<string> | null>(null);
 
   // ── Hydrate from localStorage after first client render ──────────────────
   useEffect(() => {
+    const keys = new Set<string>();
+    if (localStorage.getItem(STORAGE_KEY_WARBONDS) !== null)
+      keys.add(STORAGE_KEY_WARBONDS);
+    if (localStorage.getItem(STORAGE_KEY_LEVEL) !== null)
+      keys.add(STORAGE_KEY_LEVEL);
+    setSavedKeys(keys);
+
     setSelected(
       new Set(loadFromStorage<string[]>(STORAGE_KEY_WARBONDS, ALL_KEYS)),
     );
@@ -71,5 +81,6 @@ export function useStratagemSettings() {
     setRules,
     level,
     setLevel,
+    savedKeys,
   };
 }
