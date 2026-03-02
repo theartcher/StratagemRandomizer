@@ -17,11 +17,12 @@ const geistMono = Geist_Mono({
   display: "swap",
 });
 
+const basePath = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
+
 export const metadata: Metadata = {
   title: "Stratagem Randomizer",
   description:
     "Randomly pick 4 Helldivers 2 stratagems from your unlocked warbonds.",
-  manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
@@ -42,6 +43,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+      <head>
+        <link rel="manifest" href={`${basePath}/manifest.json`} />
+        <link rel="apple-touch-icon" href={`${basePath}/icons/pwa-192.png`} />
+      </head>
       <body className={`${geistSans.variable} ${geistMono.variable}`}>
         <AntdRegistry>{children}</AntdRegistry>
         <RegisterSW />
