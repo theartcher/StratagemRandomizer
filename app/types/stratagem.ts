@@ -54,14 +54,3 @@ export const BACKPACK_MODES = [
 ] as const;
 
 export type BackpackMode = (typeof BACKPACK_MODES)[number]["key"];
-
-/**
- * Minimum number of support-weapon slots required by each backpack mode.
- * Used to auto-enforce the pin count and disable lower options in the UI.
- */
-export const MIN_SUPPORT_WEAPONS: Record<BackpackMode, number> = {
-  no_preference: 0,
-  sw_and_backpack: 2,
-  backpack_sw: 1,
-  backpack_only: 1,
-};

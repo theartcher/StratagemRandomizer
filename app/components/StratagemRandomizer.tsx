@@ -9,7 +9,6 @@ import stratagemsData from "@/data/stratagems.json";
 
 import {
   CONFIGURED_CATEGORIES,
-  MIN_SUPPORT_WEAPONS,
   type BackpackMode,
   type Stratagem,
 } from "@/app/types/stratagem";
@@ -97,8 +96,6 @@ export default function StratagemRandomizer() {
   const activeCounts = counts ?? DEFAULT_COUNTS;
   const activeBackpackMode = backpackMode ?? DEFAULT_BACKPACK_MODE;
   const activeLevel = level ?? DEFAULT_PLAYER_LEVEL;
-
-  const minSW = MIN_SUPPORT_WEAPONS[activeBackpackMode];
 
   const totalConfigured = CONFIGURED_CATEGORIES.reduce(
     (sum, cat) => sum + (activeCounts[cat] ?? 0),
@@ -287,20 +284,7 @@ export default function StratagemRandomizer() {
 
             <BackpacksCard
               activeMode={activeBackpackMode}
-              onSelect={(mode) => {
-                setBackpackMode(mode);
-                const min = MIN_SUPPORT_WEAPONS[mode];
-                if (min > 0) {
-                  setCounts((prev) => {
-                    const base = prev ?? DEFAULT_COUNTS;
-                    const current = base.support_weapon;
-                    if (current === null || current < min) {
-                      return { ...base, support_weapon: min };
-                    }
-                    return base;
-                  });
-                }
-              }}
+              onSelect={(mode) => setBackpackMode(mode)}
             />
 
             <PinSlotTypesCard
@@ -311,12 +295,7 @@ export default function StratagemRandomizer() {
                   [cat]: value,
                 }))
               }
-              onReset={() => {
-                const fresh = { ...DEFAULT_COUNTS };
-                if (minSW > 0) fresh.support_weapon = minSW;
-                setCounts(fresh);
-              }}
-              minSupportWeapons={minSW}
+              onReset={() => setCounts({ ...DEFAULT_COUNTS })}
             />
           </>
         )}

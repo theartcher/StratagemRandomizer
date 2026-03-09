@@ -159,14 +159,9 @@ export function pickStratagems({
       }
     }
 
-    // When a backpack mode is active, cap backpack-slot items at 1 to prevent
-    // double-backpack loadouts, and apply mode-specific exclusions.
-    if (
-      backpackMode !== "no_preference" &&
-      usesBackpackSlot(s) &&
-      backpackSlotCount >= 1
-    )
-      continue;
+    // You only have one backpack slot — never allow more than 1 backpack-slot
+    // item regardless of mode.
+    if (usesBackpackSlot(s) && backpackSlotCount >= 1) continue;
 
     // "backpack_only" — also exclude backpack-type support weapons entirely.
     if (backpackMode === "backpack_only" && s.subcategory === "backpack_weapon")

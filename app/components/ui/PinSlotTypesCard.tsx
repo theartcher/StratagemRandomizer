@@ -15,15 +15,12 @@ interface Props {
   /** Pass null to unpin (Any amount); pass a number to pin to that count. */
   onSetCount: (cat: ConfiguredCategory, value: number | null) => void;
   onReset: () => void;
-  /** Minimum support_weapon count enforced by the backpack mode. */
-  minSupportWeapons?: number;
 }
 
 export default function PinSlotTypesCard({
   counts,
   onSetCount,
   onReset,
-  minSupportWeapons = 0,
 }: Props) {
   const isMobile = !Grid.useBreakpoint().sm;
 
@@ -116,77 +113,53 @@ export default function PinSlotTypesCard({
                       </Text>
 
                       {/* Any amount — active when not pinned and slots are available */}
-                      {(() => {
-                        const minForCat =
-                          cat === "support_weapon" ? minSupportWeapons : 0;
-                        const anyDisabled = lockedOut || minForCat > 0;
-                        return (
-                          <Button
-                            type={
-                              !enabled && !lockedOut ? "primary" : "default"
-                            }
-                            disabled={anyDisabled}
-                            onClick={() => onSetCount(cat, null)}
-                            style={{
-                              width: "100%",
-                              height: isMobile ? 36 : 44,
-                              fontSize: isMobile ? 10 : 13,
-                              fontWeight: 700,
-                              letterSpacing: "0.02em",
-                              padding: "0 4px",
-                              opacity: anyDisabled ? 0.25 : 1,
-                            }}
-                          >
-                            {isMobile ? "Any" : "Any amount"}
-                          </Button>
-                        );
-                      })()}
+                      <Button
+                        type={!enabled && !lockedOut ? "primary" : "default"}
+                        disabled={lockedOut}
+                        onClick={() => onSetCount(cat, null)}
+                        style={{
+                          width: "100%",
+                          height: isMobile ? 36 : 44,
+                          fontSize: isMobile ? 10 : 13,
+                          fontWeight: 700,
+                          letterSpacing: "0.02em",
+                          padding: "0 4px",
+                          opacity: lockedOut ? 0.25 : 1,
+                        }}
+                      >
+                        {isMobile ? "Any" : "Any amount"}
+                      </Button>
 
                       {/* 0 = exclude this category entirely */}
-                      {(() => {
-                        const minForCat =
-                          cat === "support_weapon" ? minSupportWeapons : 0;
-                        const zeroDisabled = minForCat > 0;
-                        return (
-                          <Button
-                            type={
-                              enabled && current === 0 ? "primary" : "default"
-                            }
-                            disabled={zeroDisabled}
-                            onClick={() => onSetCount(cat, 0)}
-                            style={{
-                              width: "100%",
-                              height: isMobile ? 36 : 44,
-                              fontSize: isMobile ? 16 : 20,
-                              fontWeight: 800,
-                              opacity: zeroDisabled ? 0.25 : 1,
-                            }}
-                          >
-                            0
-                          </Button>
-                        );
-                      })()}
+                      <Button
+                        type={enabled && current === 0 ? "primary" : "default"}
+                        onClick={() => onSetCount(cat, 0)}
+                        style={{
+                          width: "100%",
+                          height: isMobile ? 36 : 44,
+                          fontSize: isMobile ? 16 : 20,
+                          fontWeight: 800,
+                        }}
+                      >
+                        0
+                      </Button>
 
                       {[1, 2, 3, 4].map((n) => {
-                        const minForCat =
-                          cat === "support_weapon" ? minSupportWeapons : 0;
-                        const belowMin = n < minForCat;
                         const wouldExceed = otherTotal + n > 4;
-                        const isDisabled = wouldExceed || belowMin;
                         return (
                           <Button
                             key={n}
                             type={
                               enabled && current === n ? "primary" : "default"
                             }
-                            disabled={isDisabled}
+                            disabled={wouldExceed}
                             onClick={() => onSetCount(cat, n)}
                             style={{
                               width: "100%",
                               height: isMobile ? 36 : 44,
                               fontSize: isMobile ? 16 : 20,
                               fontWeight: 800,
-                              opacity: isDisabled ? 0.25 : 1,
+                              opacity: wouldExceed ? 0.25 : 1,
                             }}
                           >
                             {n}
