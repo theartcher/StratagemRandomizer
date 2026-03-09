@@ -9,6 +9,7 @@ import stratagemsData from "@/data/stratagems.json";
 
 import {
   CONFIGURED_CATEGORIES,
+  RULE_CONFLICTS,
   RULES,
   type Stratagem,
 } from "@/app/types/stratagem";
@@ -120,7 +121,14 @@ export default function StratagemRandomizer() {
     setRules((prev) => {
       const base = prev ?? new Set(DEFAULT_RULES);
       const next = new Set(base);
-      next.has(key) ? next.delete(key) : next.add(key);
+      if (next.has(key)) {
+        next.delete(key);
+      } else {
+        next.add(key);
+        // Enforce mutual exclusivity — deactivate any conflicting rule.
+        const conflict = RULE_CONFLICTS[key];
+        if (conflict) next.delete(conflict);
+      }
       return next;
     });
 

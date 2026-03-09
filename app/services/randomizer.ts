@@ -20,6 +20,14 @@ interface PickOptions {
 }
 
 /**
+ * Returns true when a stratagem occupies the backpack slot — either it IS a
+ * standalone backpack, or it is a support weapon that ships with a backpack
+ * (subcategory "backpack_weapon").
+ */
+const usesBackpackSlot = (s: Stratagem): boolean =>
+  s.category === "backpack" || s.subcategory === "backpack_weapon";
+
+/**
  * Picks up to 4 stratagems from the pool, respecting pinned category counts
  * and active rules. Returns the final selection in order.
  */
@@ -64,6 +72,31 @@ export function pickStratagems({
     );
   }
 
+  // Track total backpack-slot usage (standalone backpacks + backpack weapons)
+  // for both the no_double_backpack and guarantee_backpack rules.
+  let backpackSlotCount = picked.filter(usesBackpackSlot).length;
+
+  // guarantee_backpack — if no backpack slot item has been pinned yet, reserve
+  // one slot for a backpack or backpack-type support weapon before filling the
+  // remaining slots at random.
+  if (rules.has("guarantee_backpack") && picked.length < 4) {
+    if (backpackSlotCount === 0) {
+      const backpackCandidates = shuffle(
+        levelledPool.filter((s) => !usedIds.has(s.id) && usesBackpackSlot(s)),
+      );
+      if (backpackCandidates.length > 0) {
+        const bp = backpackCandidates[0];
+        picked.push(bp);
+        usedIds.add(bp.id);
+        pickedPerCategory.set(
+          bp.category,
+          (pickedPerCategory.get(bp.category) ?? 0) + 1,
+        );
+        backpackSlotCount++;
+      }
+    }
+  }
+
   /**
    * The maximum number of stratagems allowed for a given category,
    * taking into account pinned counts and active rules.
@@ -73,7 +106,10 @@ export function pickStratagems({
       const pinnedMax = counts[category as ConfiguredCategory];
       if (pinnedMax !== null) return pinnedMax;
     }
-    const rule = RULES.find((r) => r.category === category);
+    const rule = RULES.find(
+      (r): r is Extract<(typeof RULES)[number], { max: number }> =>
+        r.category === category && "max" in r,
+    );
     if (rule && rules.has(rule.key)) return rule.max;
     return Infinity;
   };
@@ -86,9 +122,19 @@ export function pickStratagems({
     const current = pickedPerCategory.get(s.category) ?? 0;
     if (current >= max) continue;
 
+    // no_double_backpack — prevent any second backpack-slot item regardless of
+    // whether it is a standalone backpack or a backpack-type support weapon.
+    if (
+      rules.has("no_double_backpack") &&
+      usesBackpackSlot(s) &&
+      backpackSlotCount >= 1
+    )
+      continue;
+
     picked.push(s);
     usedIds.add(s.id);
     pickedPerCategory.set(s.category, current + 1);
+    if (usesBackpackSlot(s)) backpackSlotCount++;
   }
 
   return picked;
