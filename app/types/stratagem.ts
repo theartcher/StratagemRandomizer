@@ -5,6 +5,8 @@ export interface Stratagem {
   name: string;
   code: string[];
   category: string;
+  /** Further classification within a category (e.g. "backpack_weapon" for support weapons that occupy the backpack slot). */
+  subcategory: string | null;
   warbond: string | null;
   /** Minimum player level required to use this stratagem. null = no restriction. */
   unlock_level: number | null;
@@ -26,16 +28,29 @@ export type ConfiguredCategory = (typeof CONFIGURED_CATEGORIES)[number];
 /** null = unconstrained (pick freely); number = exact count required */
 export type CategoryCounts = Record<ConfiguredCategory, number | null>;
 
-// ── Rules ─────────────────────────────────────────────────────────────────────
+// ── Backpack Mode ─────────────────────────────────────────────────────────────
 
-export const RULES = [
+export const BACKPACK_MODES = [
   {
-    key: "no_double_backpack",
-    label: "Singular backpack",
-    description: "You've only got one back to carry with.",
-    category: "backpack",
-    max: 1,
+    key: "no_preference",
+    label: "No preference",
+    description: "Anything goes.",
+  },
+  {
+    key: "sw_and_backpack",
+    label: "Support weapon + backpack",
+    description: "One regular support weapon and one backpack.",
+  },
+  {
+    key: "backpack_sw",
+    label: "Backpack support weapon",
+    description: "A support weapon that takes the backpack slot.",
+  },
+  {
+    key: "backpack_only",
+    label: "Backpack only",
+    description: "A standalone backpack, no backpack support weapons.",
   },
 ] as const;
 
-export type RuleKey = (typeof RULES)[number]["key"];
+export type BackpackMode = (typeof BACKPACK_MODES)[number]["key"];

@@ -2,14 +2,14 @@
 
 import { useRef, useState } from "react";
 import { ConfigProvider, Grid, Typography, theme as antdTheme } from "antd";
-import { ThunderboltOutlined } from "@ant-design/icons";
+import { ThunderboltOutlined, ArrowDownOutlined } from "@ant-design/icons";
 
 import warbondsData from "@/data/warbonds.json";
 import stratagemsData from "@/data/stratagems.json";
 
 import {
   CONFIGURED_CATEGORIES,
-  RULES,
+  type BackpackMode,
   type Stratagem,
 } from "@/app/types/stratagem";
 import {
@@ -20,7 +20,7 @@ import {
   HD_YELLOW,
 } from "@/app/constants/theme";
 import { CATEGORY_COLOR, DEFAULT_COUNTS } from "@/app/constants/categories";
-import { DEFAULT_RULES } from "@/app/constants/rules";
+import { DEFAULT_BACKPACK_MODE } from "@/app/constants/rules";
 import {
   ALL_KEYS,
   BASE_GAME_KEY,
@@ -30,7 +30,7 @@ import {
 } from "@/app/constants/storage";
 import PlayerLevelCard from "@/app/components/ui/PlayerLevelCard";
 import TitleSection from "@/app/components/ui/TitleSection";
-import RulesCard from "@/app/components/ui/RulesCard";
+import BackpacksCard from "@/app/components/ui/BackpacksCard";
 import WarBondsCard from "@/app/components/ui/WarBondsCard";
 import PinSlotTypesCard from "@/app/components/ui/PinSlotTypesCard";
 import DeployButton from "@/app/components/ui/DeployButton";
@@ -55,8 +55,8 @@ export default function StratagemRandomizer() {
     setSelected,
     counts,
     setCounts,
-    rules,
-    setRules,
+    backpackMode,
+    setBackpackMode,
     level,
     setLevel,
     savedKeys,
@@ -94,7 +94,7 @@ export default function StratagemRandomizer() {
   const hydrated = savedKeys !== null;
   const activeSelected = selected ?? new Set(ALL_KEYS);
   const activeCounts = counts ?? DEFAULT_COUNTS;
-  const activeRules = rules ?? new Set(DEFAULT_RULES);
+  const activeBackpackMode = backpackMode ?? DEFAULT_BACKPACK_MODE;
   const activeLevel = level ?? DEFAULT_PLAYER_LEVEL;
 
   const totalConfigured = CONFIGURED_CATEGORIES.reduce(
@@ -116,14 +116,6 @@ export default function StratagemRandomizer() {
   const selectAll = () => setSelected(new Set(ALL_KEYS));
   const deselectAll = () => setSelected(new Set());
 
-  const toggleRule = (key: (typeof RULES)[number]["key"]) =>
-    setRules((prev) => {
-      const base = prev ?? new Set(DEFAULT_RULES);
-      const next = new Set(base);
-      next.has(key) ? next.delete(key) : next.add(key);
-      return next;
-    });
-
   // ── Randomise ─────────────────────────────────────────────────────────────
 
   const randomize = () => {
@@ -136,7 +128,7 @@ export default function StratagemRandomizer() {
     const picked = pickStratagems({
       pool,
       counts: activeCounts,
-      rules: activeRules,
+      backpackMode: activeBackpackMode,
       playerLevel: activeLevel,
     });
 
@@ -250,6 +242,32 @@ export default function StratagemRandomizer() {
 
         {hydrated && (
           <>
+            {/* Priority hint */}
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 8,
+                marginBottom: 12,
+                padding: "6px 0",
+                borderBottom: `1px solid ${HD_BORDER}`,
+              }}
+            >
+              <ArrowDownOutlined style={{ fontSize: 11, color: HD_BORDER }} />
+              <Text
+                style={{
+                  fontSize: 10,
+                  color: "#9e9880",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.08em",
+                }}
+              >
+                Higher sections take priority
+              </Text>
+              <ArrowDownOutlined style={{ fontSize: 11, color: HD_BORDER }} />
+            </div>
+
             <PlayerLevelCard
               level={activeLevel}
               onChange={(v) => setLevel(v)}
@@ -263,18 +281,24 @@ export default function StratagemRandomizer() {
               onDeselectAll={deselectAll}
               defaultCollapsed={savedKeys.has(STORAGE_KEY_WARBONDS)}
             />
+
+            <BackpacksCard
+              activeMode={activeBackpackMode}
+              onSelect={(mode) => setBackpackMode(mode)}
+            />
+
+            <PinSlotTypesCard
+              counts={activeCounts}
+              onSetCount={(cat, value) =>
+                setCounts((prev) => ({
+                  ...(prev ?? DEFAULT_COUNTS),
+                  [cat]: value,
+                }))
+              }
+              onReset={() => setCounts({ ...DEFAULT_COUNTS })}
+            />
           </>
         )}
-
-        <RulesCard activeRules={activeRules} onToggle={toggleRule} />
-
-        <PinSlotTypesCard
-          counts={activeCounts}
-          onSetCount={(cat, value) =>
-            setCounts((prev) => ({ ...(prev ?? DEFAULT_COUNTS), [cat]: value }))
-          }
-          onReset={() => setCounts({ ...DEFAULT_COUNTS })}
-        />
 
         <DeployButton
           spinning={spinning}

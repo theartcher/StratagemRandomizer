@@ -6,7 +6,7 @@ export const BASE_GAME_KEY = "__base_game__";
 // localStorage keys for persisting user preferences.
 export const STORAGE_KEY_WARBONDS = "stratagem-randomizer-warbonds";
 export const STORAGE_KEY_COUNTS = "stratagem-randomizer-counts";
-export const STORAGE_KEY_RULES = "stratagem-randomizer-rules";
+export const STORAGE_KEY_BACKPACK = "stratagem-randomizer-backpack";
 export const STORAGE_KEY_LEVEL = "stratagem-randomizer-level";
 
 // The highest unlock_level value in the dataset — treated as "no level gate".

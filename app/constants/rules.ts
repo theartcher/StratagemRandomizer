@@ -1,4 +1,4 @@
-import type { RuleKey } from "@/app/types/stratagem";
+import type { BackpackMode } from "@/app/types/stratagem";
 
-// Rules that are active by default when the app first loads.
-export const DEFAULT_RULES: RuleKey[] = ["no_double_backpack"];
+// Backpack mode that is active by default when the app first loads.
+export const DEFAULT_BACKPACK_MODE: BackpackMode = "no_preference";

@@ -1,20 +1,20 @@
 import { useEffect, useState } from "react";
 
-import type { CategoryCounts, RuleKey } from "@/app/types/stratagem";
+import type { BackpackMode, CategoryCounts } from "@/app/types/stratagem";
 import { DEFAULT_COUNTS } from "@/app/constants/categories";
-import { DEFAULT_RULES } from "@/app/constants/rules";
+import { DEFAULT_BACKPACK_MODE } from "@/app/constants/rules";
 import {
   ALL_KEYS,
   DEFAULT_PLAYER_LEVEL,
+  STORAGE_KEY_BACKPACK,
   STORAGE_KEY_COUNTS,
   STORAGE_KEY_LEVEL,
-  STORAGE_KEY_RULES,
   STORAGE_KEY_WARBONDS,
 } from "@/app/constants/storage";
 import { loadFromStorage } from "@/app/utils/storage";
 
 /**
- * Manages warbond selection, category counts, and active rules.
+ * Manages warbond selection, category counts, and active backpack mode.
  * Hydrates all three from localStorage on mount and persists changes back.
  *
  * Returns null for each value while the initial hydration is pending, which
@@ -23,7 +23,13 @@ import { loadFromStorage } from "@/app/utils/storage";
 export function useStratagemSettings() {
   const [selected, setSelected] = useState<Set<string> | null>(null);
   const [counts, setCounts] = useState<CategoryCounts | null>(null);
-  const [rules, setRules] = useState<Set<RuleKey> | null>(null);
+  /**
+   * undefined = not yet hydrated from localStorage.
+   * string    = hydrated, a specific BackpackMode is active.
+   */
+  const [backpackMode, setBackpackMode] = useState<BackpackMode | undefined>(
+    undefined,
+  );
   // null = not yet hydrated; number once loaded
   const [level, setLevel] = useState<number | null>(null);
   // Track which keys were already saved in localStorage at hydration time
@@ -45,8 +51,11 @@ export function useStratagemSettings() {
     setCounts(
       loadFromStorage<CategoryCounts>(STORAGE_KEY_COUNTS, DEFAULT_COUNTS),
     );
-    setRules(
-      new Set(loadFromStorage<RuleKey[]>(STORAGE_KEY_RULES, DEFAULT_RULES)),
+    setBackpackMode(
+      loadFromStorage<BackpackMode>(
+        STORAGE_KEY_BACKPACK,
+        DEFAULT_BACKPACK_MODE,
+      ),
     );
     setLevel(loadFromStorage<number>(STORAGE_KEY_LEVEL, DEFAULT_PLAYER_LEVEL));
   }, []);
@@ -63,9 +72,9 @@ export function useStratagemSettings() {
   }, [counts]);
 
   useEffect(() => {
-    if (rules === null) return;
-    localStorage.setItem(STORAGE_KEY_RULES, JSON.stringify([...rules]));
-  }, [rules]);
+    if (backpackMode === undefined) return;
+    localStorage.setItem(STORAGE_KEY_BACKPACK, JSON.stringify(backpackMode));
+  }, [backpackMode]);
 
   useEffect(() => {
     if (level === null) return;
@@ -77,8 +86,8 @@ export function useStratagemSettings() {
     setSelected,
     counts,
     setCounts,
-    rules,
-    setRules,
+    backpackMode,
+    setBackpackMode,
     level,
     setLevel,
     savedKeys,
