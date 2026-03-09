@@ -1,9 +1,8 @@
 import {
   CONFIGURED_CATEGORIES,
-  RULES,
+  type BackpackMode,
   type CategoryCounts,
   type ConfiguredCategory,
-  type RuleKey,
   type Stratagem,
 } from "@/app/types/stratagem";
 import { shuffle } from "@/app/utils/array";
@@ -13,8 +12,8 @@ interface PickOptions {
   pool: Stratagem[];
   /** Per-category pin counts (null = unconstrained). */
   counts: CategoryCounts;
-  /** Currently active rule keys. */
-  rules: Set<RuleKey>;
+  /** Currently active backpack mode. */
+  backpackMode: BackpackMode;
   /** Player level — stratagems with a higher unlock_level are excluded. */
   playerLevel: number;
 }
@@ -29,12 +28,12 @@ const usesBackpackSlot = (s: Stratagem): boolean =>
 
 /**
  * Picks up to 4 stratagems from the pool, respecting pinned category counts
- * and active rules. Returns the final selection in order.
+ * and the active backpack mode. Returns the final selection in order.
  */
 export function pickStratagems({
   pool,
   counts,
-  rules,
+  backpackMode,
   playerLevel,
 }: PickOptions): Stratagem[] {
   // Exclude stratagems the player hasn't unlocked yet.
@@ -59,7 +58,79 @@ export function pickStratagems({
     }
   }
 
-  // Step 2 — fill remaining slots from the rest of the pool.
+  // Step 2 — apply backpack mode guarantees.
+  if (backpackMode !== "no_preference" && picked.length < 4) {
+    const hasStandaloneBackpack = picked.some((s) => s.category === "backpack");
+    const hasBackpackSW = picked.some(
+      (s) => s.subcategory === "backpack_weapon",
+    );
+    const hasRegularSW = picked.some(
+      (s) =>
+        s.category === "support_weapon" && s.subcategory !== "backpack_weapon",
+    );
+
+    if (backpackMode === "sw_and_backpack") {
+      // Guarantee a regular (non-backpack) support weapon.
+      if (!hasRegularSW && picked.length < 4) {
+        const candidates = shuffle(
+          levelledPool.filter(
+            (s) =>
+              !usedIds.has(s.id) &&
+              s.category === "support_weapon" &&
+              s.subcategory !== "backpack_weapon",
+          ),
+        );
+        if (candidates.length > 0) {
+          picked.push(candidates[0]);
+          usedIds.add(candidates[0].id);
+        }
+      }
+      // Guarantee a standalone backpack.
+      if (!hasStandaloneBackpack && picked.length < 4) {
+        const candidates = shuffle(
+          levelledPool.filter(
+            (s) => !usedIds.has(s.id) && s.category === "backpack",
+          ),
+        );
+        if (candidates.length > 0) {
+          picked.push(candidates[0]);
+          usedIds.add(candidates[0].id);
+        }
+      }
+    }
+
+    if (backpackMode === "backpack_sw") {
+      // Guarantee a backpack-type support weapon.
+      if (!hasBackpackSW && picked.length < 4) {
+        const candidates = shuffle(
+          levelledPool.filter(
+            (s) => !usedIds.has(s.id) && s.subcategory === "backpack_weapon",
+          ),
+        );
+        if (candidates.length > 0) {
+          picked.push(candidates[0]);
+          usedIds.add(candidates[0].id);
+        }
+      }
+    }
+
+    if (backpackMode === "backpack_only") {
+      // Guarantee a standalone backpack.
+      if (!hasStandaloneBackpack && picked.length < 4) {
+        const candidates = shuffle(
+          levelledPool.filter(
+            (s) => !usedIds.has(s.id) && s.category === "backpack",
+          ),
+        );
+        if (candidates.length > 0) {
+          picked.push(candidates[0]);
+          usedIds.add(candidates[0].id);
+        }
+      }
+    }
+  }
+
+  // Step 3 — fill remaining slots from the rest of the pool.
   const remaining = 4 - picked.length;
   if (remaining <= 0) return picked;
 
@@ -72,68 +143,49 @@ export function pickStratagems({
     );
   }
 
-  // Track total backpack-slot usage (standalone backpacks + backpack weapons)
-  // for both the no_double_backpack and guarantee_backpack rules.
+  // Track total backpack-slot usage for backpack mode constraints.
   let backpackSlotCount = picked.filter(usesBackpackSlot).length;
-
-  // guarantee_backpack — if no backpack slot item has been pinned yet, reserve
-  // one slot for a backpack or backpack-type support weapon before filling the
-  // remaining slots at random.
-  if (rules.has("guarantee_backpack") && picked.length < 4) {
-    if (backpackSlotCount === 0) {
-      const backpackCandidates = shuffle(
-        levelledPool.filter((s) => !usedIds.has(s.id) && usesBackpackSlot(s)),
-      );
-      if (backpackCandidates.length > 0) {
-        const bp = backpackCandidates[0];
-        picked.push(bp);
-        usedIds.add(bp.id);
-        pickedPerCategory.set(
-          bp.category,
-          (pickedPerCategory.get(bp.category) ?? 0) + 1,
-        );
-        backpackSlotCount++;
-      }
-    }
-  }
-
-  /**
-   * The maximum number of stratagems allowed for a given category,
-   * taking into account pinned counts and active rules.
-   */
-  const getEffectiveMax = (category: string): number => {
-    if ((CONFIGURED_CATEGORIES as readonly string[]).includes(category)) {
-      const pinnedMax = counts[category as ConfiguredCategory];
-      if (pinnedMax !== null) return pinnedMax;
-    }
-    const rule = RULES.find(
-      (r): r is Extract<(typeof RULES)[number], { max: number }> =>
-        r.category === category && "max" in r,
-    );
-    if (rule && rules.has(rule.key)) return rule.max;
-    return Infinity;
-  };
 
   const candidates = shuffle(levelledPool.filter((s) => !usedIds.has(s.id)));
   for (const s of candidates) {
     if (picked.length >= 4) break;
 
-    const max = getEffectiveMax(s.category);
-    const current = pickedPerCategory.get(s.category) ?? 0;
-    if (current >= max) continue;
+    // Respect pinned category maximums.
+    if ((CONFIGURED_CATEGORIES as readonly string[]).includes(s.category)) {
+      const pinnedMax = counts[s.category as ConfiguredCategory];
+      if (pinnedMax !== null) {
+        const current = pickedPerCategory.get(s.category) ?? 0;
+        if (current >= pinnedMax) continue;
+      }
+    }
 
-    // no_double_backpack — prevent any second backpack-slot item regardless of
-    // whether it is a standalone backpack or a backpack-type support weapon.
+    // When a backpack mode is active, cap backpack-slot items at 1 to prevent
+    // double-backpack loadouts, and apply mode-specific exclusions.
     if (
-      rules.has("no_double_backpack") &&
+      backpackMode !== "no_preference" &&
       usesBackpackSlot(s) &&
       backpackSlotCount >= 1
     )
       continue;
 
+    // "backpack_only" — also exclude backpack-type support weapons entirely.
+    if (backpackMode === "backpack_only" && s.subcategory === "backpack_weapon")
+      continue;
+
+    // "sw_and_backpack" — exclude backpack-type support weapons (we wanted a
+    // regular SW, not one that also takes the backpack slot).
+    if (
+      backpackMode === "sw_and_backpack" &&
+      s.subcategory === "backpack_weapon"
+    )
+      continue;
+
     picked.push(s);
     usedIds.add(s.id);
-    pickedPerCategory.set(s.category, current + 1);
+    pickedPerCategory.set(
+      s.category,
+      (pickedPerCategory.get(s.category) ?? 0) + 1,
+    );
     if (usesBackpackSlot(s)) backpackSlotCount++;
   }
 

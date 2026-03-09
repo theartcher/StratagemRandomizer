@@ -28,31 +28,40 @@ export type ConfiguredCategory = (typeof CONFIGURED_CATEGORIES)[number];
 /** null = unconstrained (pick freely); number = exact count required */
 export type CategoryCounts = Record<ConfiguredCategory, number | null>;
 
-// ── Rules ─────────────────────────────────────────────────────────────────────
+// ── Backpack Mode ─────────────────────────────────────────────────────────────
 
-export const RULES = [
+export const BACKPACK_MODES = [
   {
-    key: "no_double_backpack",
-    label: "Limit to one backpack slot",
-    description:
-      "Your loadout will contain at most one backpack slot item — either a standalone backpack (e.g. Guard Dog) or a support weapon that requires a backpack, not both.",
-    category: "backpack",
-    max: 1,
+    key: "no_preference",
+    label: "No preference",
+    description: "Anything goes.",
   },
   {
-    key: "guarantee_backpack",
-    label: "Guarantee a backpack",
-    description:
-      "Your loadout will always include a backpack slot item — either a standalone backpack or a support weapon that requires one.",
-    category: "backpack",
-    min: 1,
+    key: "sw_and_backpack",
+    label: "Support weapon + backpack",
+    description: "One regular support weapon and one backpack.",
+  },
+  {
+    key: "backpack_sw",
+    label: "Backpack support weapon",
+    description: "A support weapon that takes the backpack slot.",
+  },
+  {
+    key: "backpack_only",
+    label: "Backpack only",
+    description: "A standalone backpack, no backpack support weapons.",
   },
 ] as const;
 
-export type RuleKey = (typeof RULES)[number]["key"];
+export type BackpackMode = (typeof BACKPACK_MODES)[number]["key"];
 
-/** Rules that cannot be active at the same time. */
-export const RULE_CONFLICTS: Partial<Record<RuleKey, RuleKey>> = {
-  no_double_backpack: "guarantee_backpack",
-  guarantee_backpack: "no_double_backpack",
+/**
+ * Minimum number of support-weapon slots required by each backpack mode.
+ * Used to auto-enforce the pin count and disable lower options in the UI.
+ */
+export const MIN_SUPPORT_WEAPONS: Record<BackpackMode, number> = {
+  no_preference: 0,
+  sw_and_backpack: 2,
+  backpack_sw: 1,
+  backpack_only: 1,
 };
