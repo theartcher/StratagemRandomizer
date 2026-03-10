@@ -20,9 +20,49 @@ const geistMono = Geist_Mono({
 const basePath = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://theartcher.github.io/StratagemRandomizer"),
   title: "Stratagem Randomizer",
   description:
     "Randomly pick 4 Helldivers 2 stratagems from your unlocked warbonds.",
+  keywords: [
+    "Helldivers 2",
+    "Stratagem Randomizer",
+    "stratagems",
+    "loadout",
+    "randomizer",
+    "warbonds",
+  ],
+  authors: [{ name: "theartcher", url: "https://github.com/theartcher" }],
+  alternates: {
+    canonical: "/",
+  },
+  openGraph: {
+    type: "website",
+    url: "https://theartcher.github.io/StratagemRandomizer",
+    title: "Stratagem Randomizer",
+    description:
+      "Randomly pick 4 Helldivers 2 stratagems from your unlocked warbonds.",
+    siteName: "Stratagem Randomizer",
+    images: [
+      {
+        url: "icons/pwa-512.png",
+        width: 512,
+        height: 512,
+        alt: "Stratagem Randomizer icon",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary",
+    title: "Stratagem Randomizer",
+    description:
+      "Randomly pick 4 Helldivers 2 stratagems from your unlocked warbonds.",
+    images: ["icons/pwa-512.png"],
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
