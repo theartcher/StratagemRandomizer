@@ -23,7 +23,7 @@ export const metadata: Metadata = {
   metadataBase: new URL("https://theartcher.github.io/StratagemRandomizer"),
   title: "Stratagem Randomizer",
   verification: {
-    google: "CnzULF0wd_zyF6mwWPfz_L0vZD_pLB6vlBcleIoplw",
+    google: "yCnzULF0wd_zyF6mwWPfz_L0vZD_pLB6vlBcleIoplw",
   },
   description:
     "Randomly pick 4 Helldivers 2 stratagems from your unlocked warbonds.",
