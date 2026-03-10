@@ -51,6 +51,11 @@ export const BACKPACK_MODES = [
     label: "Backpack only",
     description: "A standalone backpack, no backpack support weapons.",
   },
+  {
+    key: "no_backpack",
+    label: "No backpack",
+    description: "No backpack-slot items at all.",
+  },
 ] as const;
 
 export type BackpackMode = (typeof BACKPACK_MODES)[number]["key"];

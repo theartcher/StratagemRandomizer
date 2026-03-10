@@ -59,7 +59,11 @@ export function pickStratagems({
   }
 
   // Step 2 — apply backpack mode guarantees.
-  if (backpackMode !== "no_preference" && picked.length < 4) {
+  if (
+    backpackMode !== "no_preference" &&
+    backpackMode !== "no_backpack" &&
+    picked.length < 4
+  ) {
     const hasStandaloneBackpack = picked.some((s) => s.category === "backpack");
     const hasBackpackSW = picked.some(
       (s) => s.subcategory === "backpack_weapon",
@@ -162,6 +166,9 @@ export function pickStratagems({
     // You only have one backpack slot — never allow more than 1 backpack-slot
     // item regardless of mode.
     if (usesBackpackSlot(s) && backpackSlotCount >= 1) continue;
+
+    // "no_backpack" — exclude all backpack-slot items.
+    if (backpackMode === "no_backpack" && usesBackpackSlot(s)) continue;
 
     // "backpack_only" — also exclude backpack-type support weapons entirely.
     if (backpackMode === "backpack_only" && s.subcategory === "backpack_weapon")
