@@ -629,20 +629,29 @@ async function updateIcons(stratagemIds, force = false) {
   mkdirSync(ICON_OUT_DIR, { recursive: true });
 
   let copied = 0;
+  let skipped = 0;
   const notFound = [];
 
   for (const [relPath, ids] of Object.entries(ICON_MAP)) {
     const srcFile = join(repoRoot, ...relPath.split("/"));
     if (existsSync(srcFile)) {
+      const srcBuf = readFileSync(srcFile);
       for (const id of ids) {
-        copyFileSync(srcFile, join(ICON_OUT_DIR, `${id}.svg`));
+        const destPath = join(ICON_OUT_DIR, `${id}.svg`);
+        if (existsSync(destPath) && readFileSync(destPath).equals(srcBuf)) {
+          skipped++;
+          continue;
+        }
+        writeFileSync(destPath, srcBuf);
         copied++;
       }
     } else {
       notFound.push(relPath);
     }
   }
-  console.log(`      Copied ${copied} mapped icon(s)`);
+  console.log(
+    `      Copied ${copied} mapped icon(s) (${skipped} unchanged, skipped)`,
+  );
 
   // ── Auto-match unmapped SVGs ──────────────────────────────────────────────
   console.log("[icons 4/4] Auto-matching unmapped icons...");
@@ -672,9 +681,13 @@ async function updateIcons(stratagemIds, force = false) {
 
     if (matchedId) {
       const srcFile = join(repoRoot, ...relPath.split("/"));
-      copyFileSync(srcFile, join(ICON_OUT_DIR, `${matchedId}.svg`));
-      copied++;
-      autoMatched.push(`${relPath}  →  ${matchedId}`);
+      const srcBuf = readFileSync(srcFile);
+      const destPath = join(ICON_OUT_DIR, `${matchedId}.svg`);
+      if (!existsSync(destPath) || !readFileSync(destPath).equals(srcBuf)) {
+        writeFileSync(destPath, srcBuf);
+        copied++;
+        autoMatched.push(`${relPath}  →  ${matchedId}`);
+      }
     } else {
       stillUnmapped.push(relPath);
     }
@@ -716,6 +729,39 @@ async function updateIcons(stratagemIds, force = false) {
   console.log("      Temp files cleaned up.");
 
   return { copied, autoMatched, unmapped: stillUnmapped, missing };
+}
+
+/**
+ * For each new stratagem detected on the wiki, check whether a matching icon
+ * already exists in the upstream icon repo's README list.
+ *
+ * @param {Array} newStratagems - array of wiki stratagem objects (have .name)
+ * @param {Set<string>} readmeIcons - icon paths from fetchReadmeIconList()
+ * @returns {{ available: string[], missing: string[], allAvailable: boolean }}
+ */
+function checkNewStratagemIcons(newStratagems, readmeIcons) {
+  const available = [];
+  const missing = [];
+
+  for (const strat of newStratagems) {
+    const candidate = toKebabCase(strat.name);
+    const found = [...readmeIcons].some((iconPath) => {
+      const iconBaseName = basename(iconPath, extname(iconPath));
+      const iconId = toKebabCase(iconBaseName);
+      return (
+        iconId === candidate ||
+        iconId.includes(candidate) ||
+        candidate.includes(iconId)
+      );
+    });
+    if (found) {
+      available.push(strat.name);
+    } else {
+      missing.push(strat.name);
+    }
+  }
+
+  return { available, missing, allAvailable: missing.length === 0 };
 }
 
 // ── Data merging ─────────────────────────────────────────────────────────────
@@ -826,18 +872,56 @@ async function main() {
       );
     }
 
-    // ── Step 2: Merge new stratagems into data files ─────────────────────────
+    // ── Step 2: Check icon availability for the new stratagems ──────────────
+    console.log("\nChecking icon availability for new stratagems...");
+    const readmeIcons = await fetchReadmeIconList();
+    const iconCheck = checkNewStratagemIcons(newStratagems, readmeIcons);
+
+    if (iconCheck.available.length > 0) {
+      console.log(
+        `  ✓ ${iconCheck.available.length} new stratagem(s) have icons available: ${iconCheck.available.join(", ")}`,
+      );
+    }
+    if (iconCheck.missing.length > 0) {
+      console.log(
+        `  ✗ ${iconCheck.missing.length} new stratagem(s) are missing icons in the upstream repo:`,
+      );
+      iconCheck.missing.forEach((name) => console.log(`      - ${name}`));
+    }
+
+    const outPath = join(projectRoot, "new-stratagems.json");
+
+    if (!iconCheck.allAvailable) {
+      console.log(
+        "\n⚠️  Icons not yet available for all new stratagems. Skipping data merge and PR creation.",
+      );
+      writeFileSync(
+        outPath,
+        JSON.stringify(
+          {
+            new_stratagems: entries.map((e) => ({ name: e.name })),
+            icons_available: false,
+            missing_icons: iconCheck.missing,
+          },
+          null,
+          2,
+        ) + "\n",
+      );
+      console.log(`\nSummary written to ${outPath}`);
+      return;
+    }
+
+    // ── Step 3: Merge new stratagems into data files ─────────────────────────
     console.log("\nMerging new stratagems into data files...");
     const allIds = mergeNewStratagems(entries);
 
-    // ── Step 3: Update icons (force download since we have new stratagems) ──
+    // ── Step 4: Update icons (force download since we have new stratagems) ──
     console.log("\nUpdating icons...");
     await updateIcons(allIds, true);
 
-    // ── Step 4: Write summary output ─────────────────────────────────────────
-    const output = { new_stratagems: entries };
-    const outPath = join(projectRoot, "new-stratagems.json");
-    writeFileSync(outPath, JSON.stringify(output, null, 2));
+    // ── Step 5: Write summary output ─────────────────────────────────────────
+    const output = { new_stratagems: entries, icons_available: true };
+    writeFileSync(outPath, JSON.stringify(output, null, 2) + "\n");
     console.log(`\nSummary written to ${outPath}`);
   } catch (err) {
     console.error("Error:", err.message);

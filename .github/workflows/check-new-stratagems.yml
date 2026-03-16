@@ -47,17 +47,31 @@ jobs:
               console.log(data.new_stratagems.map(s => s.name).join(', '));
             ")
             echo "new_names=$NAMES" >> $GITHUB_OUTPUT
+
+            ICONS_AVAILABLE=$(node -e "
+              const data = require('./new-stratagems.json');
+              console.log(data.icons_available === true ? 'true' : 'false');
+            ")
+            echo "icons_available=$ICONS_AVAILABLE" >> $GITHUB_OUTPUT
+
+            MISSING_ICONS=$(node -e "
+              const data = require('./new-stratagems.json');
+              const m = data.missing_icons || [];
+              console.log(m.length > 0 ? m.join(', ') : '');
+            ")
+            echo "missing_icons=$MISSING_ICONS" >> $GITHUB_OUTPUT
           else
             echo "has_new=false" >> $GITHUB_OUTPUT
+            echo "icons_available=false" >> $GITHUB_OUTPUT
           fi
 
       # ── Step 2: Create PR with changes ─────────────────────────────────────
       - name: Clean up temporary files
-        if: steps.check.outputs.has_new == 'true'
+        if: steps.check.outputs.has_new == 'true' && steps.check.outputs.icons_available == 'true'
         run: rm -f new-stratagems.json
 
       - name: Create Pull Request
-        if: steps.check.outputs.has_new == 'true'
+        if: steps.check.outputs.has_new == 'true' && steps.check.outputs.icons_available == 'true'
         uses: peter-evans/create-pull-request@v7
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -95,15 +109,33 @@ jobs:
       - name: Summary
         if: always()
         run: |
-          if [ "${{ steps.check.outputs.has_new }}" == "true" ]; then
-            echo "### ⚡ New Stratagems Found" >> $GITHUB_STEP_SUMMARY
+          HAS_NEW="${{ steps.check.outputs.has_new }}"
+          ICONS_AVAILABLE="${{ steps.check.outputs.icons_available }}"
+          NEW_COUNT="${{ steps.check.outputs.new_count }}"
+          NEW_NAMES="${{ steps.check.outputs.new_names }}"
+          MISSING_ICONS="${{ steps.check.outputs.missing_icons }}"
+
+          if [ "$HAS_NEW" == "true" ]; then
+            echo "### ⚡ Wiki: $NEW_COUNT new stratagem(s) found" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
-            echo "Found **${{ steps.check.outputs.new_count }}** new stratagem(s):" >> $GITHUB_STEP_SUMMARY
-            echo "**${{ steps.check.outputs.new_names }}**" >> $GITHUB_STEP_SUMMARY
+            echo "**$NEW_NAMES**" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
-            echo "A pull request has been created with the changes." >> $GITHUB_STEP_SUMMARY
+
+            if [ "$ICONS_AVAILABLE" == "true" ]; then
+              echo "### ✓ Icons: all available" >> $GITHUB_STEP_SUMMARY
+              echo "" >> $GITHUB_STEP_SUMMARY
+              echo "A pull request has been created with the changes." >> $GITHUB_STEP_SUMMARY
+            else
+              echo "### ✗ Icons: not yet available in upstream repo" >> $GITHUB_STEP_SUMMARY
+              echo "" >> $GITHUB_STEP_SUMMARY
+              if [ -n "$MISSING_ICONS" ]; then
+                echo "Missing icons for: **$MISSING_ICONS**" >> $GITHUB_STEP_SUMMARY
+                echo "" >> $GITHUB_STEP_SUMMARY
+              fi
+              echo "No PR was created. The workflow will retry tomorrow." >> $GITHUB_STEP_SUMMARY
+            fi
           else
-            echo "### ✓ No New Stratagems" >> $GITHUB_STEP_SUMMARY
+            echo "### ✓ Wiki: no new stratagems" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
             echo "Local data is up to date with the wiki." >> $GITHUB_STEP_SUMMARY
           fi
