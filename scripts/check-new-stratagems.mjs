@@ -743,9 +743,17 @@ function checkNewStratagemIcons(newStratagems, readmeIcons) {
   const available = [];
   const missing = [];
 
+  // Only icons that are NOT already in ICON_MAP are candidates for new stratagems.
+  // Existing mapped icons (e.g. "Mortar Sentry") must not produce false positives
+  // through substring matching against new stratagem names like "Gas Mortar Sentry".
+  const mappedKeys = new Set(Object.keys(ICON_MAP));
+  const newReadmeIcons = [...readmeIcons].filter(
+    (iconPath) => !mappedKeys.has(iconPath),
+  );
+
   for (const strat of newStratagems) {
     const candidate = toKebabCase(strat.name);
-    const found = [...readmeIcons].some((iconPath) => {
+    const found = newReadmeIcons.some((iconPath) => {
       const iconBaseName = basename(iconPath, extname(iconPath));
       const iconId = toKebabCase(iconBaseName);
       return (
