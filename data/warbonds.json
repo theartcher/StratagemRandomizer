@@ -54,6 +54,11 @@
       "id": "urban-legends",
       "name": "Urban Legends",
       "pages": 3
+    },
+    {
+      "id": "entrenched-division",
+      "name": "Entrenched Division",
+      "pages": 3
     }
   ]
 }

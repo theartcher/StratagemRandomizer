@@ -420,7 +420,6 @@
       "warbond_page": 2,
       "ship_module": null
     },
-
     {
       "id": "orbital-precision-strike",
       "name": "Orbital Precision Strike",
@@ -589,7 +588,6 @@
       "warbond_page": null,
       "ship_module": "Orbital Cannons"
     },
-
     {
       "id": "eagle-strafing-run",
       "name": "Eagle Strafing Run",
@@ -688,7 +686,6 @@
       "warbond_page": null,
       "ship_module": "Hangar"
     },
-
     {
       "id": "md-6-anti-personnel-minefield",
       "name": "MD-6 Anti-Personnel Minefield",
@@ -815,7 +812,6 @@
       "warbond_page": 3,
       "ship_module": null
     },
-
     {
       "id": "amg-43-machine-gun-sentry",
       "name": "A/MG-43 Machine Gun Sentry",
@@ -928,7 +924,6 @@
       "warbond_page": 2,
       "ship_module": null
     },
-
     {
       "id": "b-1-supply-pack",
       "name": "B-1 Supply Pack",
@@ -1111,7 +1106,6 @@
       "warbond_page": 3,
       "ship_module": null
     },
-
     {
       "id": "exo-45-patriot-exosuit",
       "name": "EXO-45 Patriot Exosuit",
@@ -1177,6 +1171,52 @@
       "warbond": null,
       "warbond_page": null,
       "ship_module": "Hangar"
+    },
+    {
+      "id": "b-flam-80-cremator",
+      "name": "B/FLAM-80 Cremator",
+      "code": [
+        "down",
+        "down",
+        "down",
+        "down",
+        "right",
+        "right",
+        "down",
+        "down",
+        "up",
+        "up",
+        "up",
+        "up"
+      ],
+      "category": "support_weapon",
+      "subcategory": null,
+      "requires_backpack": false,
+      "warbond": "Entrenched Division",
+      "warbond_page": 3,
+      "ship_module": null
+    },
+    {
+      "id": "a-gm-17-gas-mortar-sentry",
+      "name": "A/GM-17 Gas Mortar Sentry",
+      "code": [
+        "down",
+        "down",
+        "up",
+        "up",
+        "right",
+        "right",
+        "down",
+        "down",
+        "left",
+        "left"
+      ],
+      "category": "sentry",
+      "subcategory": null,
+      "requires_backpack": false,
+      "warbond": "Entrenched Division",
+      "warbond_page": 2,
+      "ship_module": null
     }
   ]
 }
