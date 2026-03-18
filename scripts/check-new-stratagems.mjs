@@ -328,6 +328,8 @@ const ICON_MAP = {
   "Engineering Bay/Quasar Cannon.svg": ["las-99-quasar-cannon"],
   "Engineering Bay/Shield Generator Pack.svg": ["sh-32-shield-generator-pack"],
   "Engineering Bay/Supply Pack.svg": ["b-1-supply-pack"],
+  "Entrenched Division/FLAM-80 Cremator.svg": ["b-flam-80-cremator"],
+  "Entrenched Division/Gas Mortar Sentry.svg": ["a-gm-17-gas-mortar-sentry"],
   "Force of Law/GL-52 De-Escalator.svg": ["gl-52-de-escalator"],
   "Force of Law/Guard Dog K-9.svg": ["axarc-3-k-9"],
   "General Stratagems/Reinforce.svg": ["reinforce"],

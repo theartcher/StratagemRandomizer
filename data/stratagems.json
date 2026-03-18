@@ -1190,8 +1190,8 @@
         "up"
       ],
       "category": "support_weapon",
-      "subcategory": null,
-      "requires_backpack": false,
+      "subcategory": "backpack_weapon",
+      "requires_backpack": true,
       "warbond": "Entrenched Division",
       "warbond_page": 3,
       "ship_module": null
