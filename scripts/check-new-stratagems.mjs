@@ -803,7 +803,7 @@ function mergeNewStratagems(entries) {
       warbondData.warbonds.push({
         id: warbondId,
         name: strat.warbond,
-        pages: strat.warbond_page || 3,
+        pages: strat.warbond_page ?? 3,
       });
       existingWarbonds.add(strat.warbond);
       warbondsUpdated = true;
@@ -845,15 +845,28 @@ async function main() {
 
     if (newStratagems.length === 0) {
       console.log("\n✓ No new stratagems found. Local data is up to date.");
-      writeFileSync(
-        join(projectRoot, "new-stratagems.json"),
-        JSON.stringify({ new_stratagems: [] }, null, 2),
-      );
 
-      // Still update icons for existing stratagems (ensures all are present)
+      // Still update icons for existing stratagems (replaces placeholders once
+      // real icons become available in the upstream repo).
       console.log("\nUpdating icons for existing stratagems...");
       const allIds = localStratagems.map((s) => s.id);
-      await updateIcons(allIds);
+      const iconResult = await updateIcons(allIds);
+      const iconsUpdated = (iconResult.copied ?? 0) > 0;
+
+      writeFileSync(
+        join(projectRoot, "new-stratagems.json"),
+        JSON.stringify(
+          {
+            new_stratagems: [],
+            icons_updated: iconsUpdated,
+            // autoMatched contains "src/path → dest-id" entries for every icon
+            // that was written (new or overwritten, e.g. placeholder → real icon).
+            updated_icons: iconResult.autoMatched ?? [],
+          },
+          null,
+          2,
+        ) + "\n",
+      );
       return;
     }
 
@@ -901,22 +914,8 @@ async function main() {
 
     if (!iconCheck.allAvailable) {
       console.log(
-        "\n⚠️  Icons not yet available for all new stratagems. Skipping data merge and PR creation.",
+        "\n⚠️  Icons not yet available for all new stratagems. A PR will still be created using placeholder icon(s).",
       );
-      writeFileSync(
-        outPath,
-        JSON.stringify(
-          {
-            new_stratagems: entries.map((e) => ({ name: e.name })),
-            icons_available: false,
-            missing_icons: iconCheck.missing,
-          },
-          null,
-          2,
-        ) + "\n",
-      );
-      console.log(`\nSummary written to ${outPath}`);
-      return;
     }
 
     // ── Step 3: Merge new stratagems into data files ─────────────────────────
@@ -927,8 +926,34 @@ async function main() {
     console.log("\nUpdating icons...");
     await updateIcons(allIds, true);
 
-    // ── Step 5: Write summary output ─────────────────────────────────────────
-    const output = { new_stratagems: entries, icons_available: true };
+    // ── Step 5: Copy placeholder for any stratagems still missing an icon ────
+    const placeholderSrc = join(ICON_OUT_DIR, "placeholder.svg");
+    const placeholderIds = allIds.filter(
+      (id) => !existsSync(join(ICON_OUT_DIR, `${id}.svg`)),
+    );
+    if (placeholderIds.length > 0) {
+      if (existsSync(placeholderSrc)) {
+        console.log(
+          `\nCopying placeholder icon for ${placeholderIds.length} stratagem(s) without an icon:`,
+        );
+        for (const id of placeholderIds) {
+          copyFileSync(placeholderSrc, join(ICON_OUT_DIR, `${id}.svg`));
+          console.log(`  - ${id}`);
+        }
+      } else {
+        console.warn(
+          `\n⚠️  placeholder.svg not found; ${placeholderIds.length} stratagem(s) will have no icon.`,
+        );
+      }
+    }
+
+    // ── Step 6: Write summary output ─────────────────────────────────────────
+    const output = {
+      new_stratagems: entries,
+      icons_available: iconCheck.allAvailable,
+      missing_icons: iconCheck.missing,
+      placeholder_icons: placeholderIds,
+    };
     writeFileSync(outPath, JSON.stringify(output, null, 2) + "\n");
     console.log(`\nSummary written to ${outPath}`);
   } catch (err) {
