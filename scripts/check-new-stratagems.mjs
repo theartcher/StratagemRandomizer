@@ -525,6 +525,36 @@ function toKebabCase(s) {
 }
 
 /**
+ * Return stratagem IDs that actually need an icon refresh:
+ * - icon file missing
+ * - icon file is still the placeholder icon
+ */
+function getIdsNeedingIconRefresh(stratagemIds) {
+  const needsRefresh = new Set();
+  const placeholderPath = join(ICON_OUT_DIR, "placeholder.svg");
+  const placeholderBuf = existsSync(placeholderPath)
+    ? readFileSync(placeholderPath)
+    : null;
+
+  for (const id of stratagemIds) {
+    const iconPath = join(ICON_OUT_DIR, `${id}.svg`);
+    if (!existsSync(iconPath)) {
+      needsRefresh.add(id);
+      continue;
+    }
+
+    if (placeholderBuf) {
+      const iconBuf = readFileSync(iconPath);
+      if (iconBuf.equals(placeholderBuf)) {
+        needsRefresh.add(id);
+      }
+    }
+  }
+
+  return needsRefresh;
+}
+
+/**
  * Download the upstream icon repo zip, extract it, copy mapped icons to
  * public/icons/<id>.svg, and auto-match any unmapped SVGs by name.
  *
@@ -533,9 +563,10 @@ function toKebabCase(s) {
  *
  * @param {string[]} stratagemIds - all stratagem IDs after merging new entries
  * @param {boolean} force - skip the README pre-check and always download
+ * @param {Set<string>|null} targetIds - when provided, only these stratagem IDs are eligible for writes
  * @returns {{ copied: number, autoMatched: string[], unmapped: string[], missing: string[], skipped: boolean }}
  */
-async function updateIcons(stratagemIds, force = false) {
+async function updateIcons(stratagemIds, force = false, targetIds = null) {
   // ── Pre-check: compare README icon list against ICON_MAP ───────────────────
   if (!force) {
     const readmeIcons = await fetchReadmeIconList();
@@ -636,7 +667,9 @@ async function updateIcons(stratagemIds, force = false) {
     const srcFile = join(repoRoot, ...relPath.split("/"));
     if (existsSync(srcFile)) {
       const srcBuf = readFileSync(srcFile);
-      for (const id of ids) {
+      const idsToCopy = targetIds ? ids.filter((id) => targetIds.has(id)) : ids;
+
+      for (const id of idsToCopy) {
         const destPath = join(ICON_OUT_DIR, `${id}.svg`);
         if (existsSync(destPath) && readFileSync(destPath).equals(srcBuf)) {
           skipped++;
@@ -680,6 +713,9 @@ async function updateIcons(stratagemIds, force = false) {
     }
 
     if (matchedId) {
+      if (targetIds && !targetIds.has(matchedId)) {
+        continue;
+      }
       const srcFile = join(repoRoot, ...relPath.split("/"));
       const srcBuf = readFileSync(srcFile);
       const destPath = join(ICON_OUT_DIR, `${matchedId}.svg`);
@@ -705,7 +741,8 @@ async function updateIcons(stratagemIds, force = false) {
   }
 
   // Check for stratagems still missing an icon
-  const missing = stratagemIds.filter(
+  const idsToCheck = targetIds ? [...targetIds] : stratagemIds;
+  const missing = idsToCheck.filter(
     (id) => !existsSync(join(ICON_OUT_DIR, `${id}.svg`)),
   );
   if (missing.length > 0) {
@@ -850,7 +887,8 @@ async function main() {
       // real icons become available in the upstream repo).
       console.log("\nUpdating icons for existing stratagems...");
       const allIds = localStratagems.map((s) => s.id);
-      const iconResult = await updateIcons(allIds);
+      const refreshIds = getIdsNeedingIconRefresh(allIds);
+      const iconResult = await updateIcons(allIds, false, refreshIds);
       const iconsUpdated = (iconResult.copied ?? 0) > 0;
 
       writeFileSync(
@@ -921,14 +959,16 @@ async function main() {
     // ── Step 3: Merge new stratagems into data files ─────────────────────────
     console.log("\nMerging new stratagems into data files...");
     const allIds = mergeNewStratagems(entries);
+    const newIds = entries.map((e) => e.id);
+    const iconTargetIds = new Set(newIds);
 
     // ── Step 4: Update icons (force download since we have new stratagems) ──
     console.log("\nUpdating icons...");
-    await updateIcons(allIds, true);
+    await updateIcons(allIds, true, iconTargetIds);
 
     // ── Step 5: Copy placeholder for any stratagems still missing an icon ────
     const placeholderSrc = join(ICON_OUT_DIR, "placeholder.svg");
-    const placeholderIds = allIds.filter(
+    const placeholderIds = newIds.filter(
       (id) => !existsSync(join(ICON_OUT_DIR, `${id}.svg`)),
     );
     if (placeholderIds.length > 0) {
