@@ -1175,23 +1175,13 @@
     {
       "id": "b-flam-80-cremator",
       "name": "B/FLAM-80 Cremator",
-      "code": [
-        "down",
-        "down",
-        "down",
-        "down",
-        "right",
-        "right",
-        "down",
-        "down",
-        "up",
-        "up",
-        "up",
-        "up"
-      ],
+      "code": ["down", "down", "right", "down", "up", "up"],
       "category": "support_weapon",
       "subcategory": "backpack_weapon",
       "requires_backpack": true,
+      "cost_type": "medals",
+      "cost_amount": 110,
+      "unlock_level": null,
       "warbond": "Entrenched Division",
       "warbond_page": 3,
       "ship_module": null
@@ -1199,21 +1189,13 @@
     {
       "id": "a-gm-17-gas-mortar-sentry",
       "name": "A/GM-17 Gas Mortar Sentry",
-      "code": [
-        "down",
-        "down",
-        "up",
-        "up",
-        "right",
-        "right",
-        "down",
-        "down",
-        "left",
-        "left"
-      ],
+      "code": ["down", "up", "right", "down", "left"],
       "category": "sentry",
       "subcategory": null,
       "requires_backpack": false,
+      "cost_type": "medals",
+      "cost_amount": 85,
+      "unlock_level": null,
       "warbond": "Entrenched Division",
       "warbond_page": 2,
       "ship_module": null
