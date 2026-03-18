@@ -845,15 +845,28 @@ async function main() {
 
     if (newStratagems.length === 0) {
       console.log("\n✓ No new stratagems found. Local data is up to date.");
-      writeFileSync(
-        join(projectRoot, "new-stratagems.json"),
-        JSON.stringify({ new_stratagems: [] }, null, 2),
-      );
 
-      // Still update icons for existing stratagems (ensures all are present)
+      // Still update icons for existing stratagems (replaces placeholders once
+      // real icons become available in the upstream repo).
       console.log("\nUpdating icons for existing stratagems...");
       const allIds = localStratagems.map((s) => s.id);
-      await updateIcons(allIds);
+      const iconResult = await updateIcons(allIds);
+      const iconsUpdated = (iconResult.copied ?? 0) > 0;
+
+      writeFileSync(
+        join(projectRoot, "new-stratagems.json"),
+        JSON.stringify(
+          {
+            new_stratagems: [],
+            icons_updated: iconsUpdated,
+            // autoMatched contains "src/path → dest-id" entries for every icon
+            // that was written (new or overwritten, e.g. placeholder → real icon).
+            updated_icons: iconResult.autoMatched ?? [],
+          },
+          null,
+          2,
+        ) + "\n",
+      );
       return;
     }
 
