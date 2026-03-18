@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "format:data": "prettier --write data/stratagems.json data/warbonds.json",
+    "format:data:check": "prettier --check data/stratagems.json data/warbonds.json"
   },
   "dependencies": {
     "@ant-design/icons": "^6.1.0",
@@ -22,6 +24,7 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.1.6",
+    "prettier": "^3.8.1",
     "typescript": "^5"
   }
 }

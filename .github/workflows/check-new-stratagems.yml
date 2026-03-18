@@ -32,6 +32,8 @@ jobs:
         id: check
         run: |
           node scripts/check-new-stratagems.mjs
+          npm run format:data
+          npm run format:data:check
 
           # Read the output file
           NEW_COUNT=$(node -e "
