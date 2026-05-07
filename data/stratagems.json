@@ -1199,6 +1199,82 @@
       "warbond": "Entrenched Division",
       "warbond_page": 2,
       "ship_module": null
+    },
+    {
+      "id": "mgx-42-bullet-storm",
+      "name": "MGX-42 Bullet Storm",
+      "code": [
+        "down",
+        "down",
+        "left",
+        "left",
+        "down",
+        "down",
+        "right",
+        "right",
+        "up",
+        "up",
+        "left",
+        "left"
+      ],
+      "category": "support_weapon",
+      "subcategory": null,
+      "requires_backpack": false,
+      "warbond": "N/A",
+      "warbond_page": null,
+      "ship_module": null
+    },
+    {
+      "id": "exo-55-breakthrough-exosuit",
+      "name": "EXO-55 Breakthrough Exosuit",
+      "code": [
+        "left",
+        "left",
+        "down",
+        "down",
+        "right",
+        "right",
+        "left",
+        "left",
+        "right",
+        "right",
+        "down",
+        "down",
+        "up",
+        "up"
+      ],
+      "category": "vehicle",
+      "subcategory": null,
+      "requires_backpack": false,
+      "warbond": "N/A",
+      "warbond_page": null,
+      "ship_module": null
+    },
+    {
+      "id": "exo-51-lumberer-exosuit",
+      "name": "EXO-51 Lumberer Exosuit",
+      "code": [
+        "left",
+        "left",
+        "down",
+        "down",
+        "right",
+        "right",
+        "up",
+        "up",
+        "right",
+        "right",
+        "left",
+        "left",
+        "up",
+        "up"
+      ],
+      "category": "vehicle",
+      "subcategory": null,
+      "requires_backpack": false,
+      "warbond": "N/A",
+      "warbond_page": null,
+      "ship_module": null
     }
   ]
 }
