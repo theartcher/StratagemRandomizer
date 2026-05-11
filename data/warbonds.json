@@ -59,6 +59,11 @@
       "id": "entrenched-division",
       "name": "Entrenched Division",
       "pages": 3
+    },
+    {
+      "id": "exo-experts",
+      "name": "Exo Experts",
+      "pages": 3
     }
   ]
 }

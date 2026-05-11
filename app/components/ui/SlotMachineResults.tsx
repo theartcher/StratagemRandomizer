@@ -49,7 +49,10 @@ export default function SlotMachineResults({
       </Divider>
 
       {!spinning && results.length === 0 ? (
-        <Text type="secondary">
+        <Text
+          type="secondary"
+          style={{ textAlign: "center", display: "block", marginTop: 24 }}
+        >
           No stratagems available for the selected warbonds.
         </Text>
       ) : (

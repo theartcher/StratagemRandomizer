@@ -1199,6 +1199,48 @@
       "warbond": "Entrenched Division",
       "warbond_page": 2,
       "ship_module": null
+    },
+    {
+      "id": "mgx-42-bullet-storm",
+      "name": "MGX-42 Bullet Storm",
+      "code": ["down", "left", "down", "right", "up", "left"],
+      "category": "support_weapon",
+      "subcategory": null,
+      "requires_backpack": false,
+      "cost_type": "medals",
+      "cost_amount": 75,
+      "unlock_level": null,
+      "warbond": "Exo Experts",
+      "warbond_page": 1,
+      "ship_module": null
+    },
+    {
+      "id": "exo-55-breakthrough-exosuit",
+      "name": "EXO-55 Breakthrough Exosuit",
+      "code": ["left", "down", "right", "left", "right", "down", "up"],
+      "category": "vehicle",
+      "cost_type": "medals",
+      "cost_amount": 50,
+      "unlock_level": null,
+      "subcategory": null,
+      "requires_backpack": false,
+      "warbond": "Exo Experts",
+      "warbond_page": 3,
+      "ship_module": null
+    },
+    {
+      "id": "exo-51-lumberer-exosuit",
+      "name": "EXO-51 Lumberer Exosuit",
+      "code": ["left", "down", "right", "up", "right", "left", "up"],
+      "category": "vehicle",
+      "cost_type": "medals",
+      "cost_amount": 50,
+      "unlock_level": null,
+      "subcategory": null,
+      "requires_backpack": false,
+      "warbond": "Exo Experts",
+      "warbond_page": 2,
+      "ship_module": null
     }
   ]
 }

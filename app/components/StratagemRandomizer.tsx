@@ -2,16 +2,12 @@
 
 import { useRef, useState } from "react";
 import { ConfigProvider, Grid, Typography, theme as antdTheme } from "antd";
-import { ThunderboltOutlined, ArrowDownOutlined } from "@ant-design/icons";
+import { ArrowDownOutlined } from "@ant-design/icons";
 
 import warbondsData from "@/data/warbonds.json";
 import stratagemsData from "@/data/stratagems.json";
 
-import {
-  CONFIGURED_CATEGORIES,
-  type BackpackMode,
-  type Stratagem,
-} from "@/app/types/stratagem";
+import { CONFIGURED_CATEGORIES, type Stratagem } from "@/app/types/stratagem";
 import {
   HD_BG,
   HD_BORDER,
@@ -19,7 +15,7 @@ import {
   HD_TEXT,
   HD_YELLOW,
 } from "@/app/constants/theme";
-import { CATEGORY_COLOR, DEFAULT_COUNTS } from "@/app/constants/categories";
+import { DEFAULT_COUNTS } from "@/app/constants/categories";
 import { DEFAULT_BACKPACK_MODE } from "@/app/constants/rules";
 import {
   ALL_KEYS,
@@ -35,7 +31,6 @@ import WarBondsCard from "@/app/components/ui/WarBondsCard";
 import PinSlotTypesCard from "@/app/components/ui/PinSlotTypesCard";
 import DeployButton from "@/app/components/ui/DeployButton";
 import SlotMachineResults from "@/app/components/ui/SlotMachineResults";
-import { useSlotMachine } from "@/app/hooks/useSlotMachine";
 import { pickStratagems } from "@/app/services/randomizer";
 import { useStratagemSettings } from "@/app/hooks/useStratagemSettings";
 
