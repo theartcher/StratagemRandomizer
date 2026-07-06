@@ -67,7 +67,7 @@ async function fetchWikiPage() {
 
 /**
  * Parse stratagem names from the wiki HTML.
- * We look for the "Current Stratagems" section and extract each table row's
+ * We look for the "List of Stratagems" section and extract each table row's
  * stratagem name (second column after the icon).
  *
  * Returns an array of { name, category, code, source } objects.
@@ -75,21 +75,19 @@ async function fetchWikiPage() {
 function parseCurrentStratagems(html) {
   const stratagems = [];
 
-  // Find the Current Stratagems section
-  const currentIdx = html.indexOf('id="Current_Stratagems"');
-  if (currentIdx === -1) {
-    // Try alternate heading format
-    const altIdx = html.indexOf("Current Stratagems");
-    if (altIdx === -1)
-      throw new Error("Could not find Current Stratagems section");
+  // Find the List of Stratagems section
+  const listIdx = html.indexOf('id="List_of_Stratagems"');
+  if (listIdx === -1) {
+    throw new Error("Could not find List of Stratagems section");
   }
 
-  // Find the Mission Stratagems section (end boundary)
-  const missionIdx = html.indexOf('id="Mission_Stratagems"');
-  const endIdx = missionIdx !== -1 ? missionIdx : html.length;
+  // Stop at the Gallery section; Mission Stratagems is now a subsection we skip
+  // while parsing within the list itself.
+  const galleryIdx = html.indexOf('id="Gallery"');
+  const endIdx = galleryIdx !== -1 ? galleryIdx : html.length;
 
   // Extract the relevant HTML chunk
-  const chunk = html.substring(html.indexOf('id="Current_Stratagems"'), endIdx);
+  const chunk = html.substring(listIdx, endIdx);
 
   // We'll parse section by section looking for h3 headings and table rows
   let currentSection = null;
@@ -117,6 +115,7 @@ function parseCurrentStratagems(html) {
     const category = SECTION_CATEGORY_MAP[section.name];
 
     if (!category) continue; // skip unknown sections
+    if (section.name === "Mission Stratagems") continue;
 
     // Match table rows. Each stratagem row has:
     // <td>...<a ...title="StratagemName">StratagemName</a>...</td>
