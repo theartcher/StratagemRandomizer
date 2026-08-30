@@ -1241,6 +1241,59 @@
       "warbond": "Exo Experts",
       "warbond_page": 2,
       "ship_module": null
+    },
+    {
+      "id": "m-103-supply-frv",
+      "name": "M-103 Supply FRV",
+      "code": ["left", "down", "left", "left", "down", "up", "right"],
+      "category": "vehicle",
+      "cost_type": null,
+      "cost_amount": null,
+      "unlock_level": null,
+      "subcategory": null,
+      "requires_backpack": false,
+      "warbond": null,
+      "warbond_page": null,
+      "ship_module": "Hangar"
+    },
+    {
+      "id": "m-104-incinerator-frv",
+      "name": "M-104 Incinerator FRV",
+      "code": ["left", "down", "right", "left", "down", "up", "up"],
+      "category": "vehicle",
+      "cost_type": null,
+      "cost_amount": null,
+      "unlock_level": null,
+      "subcategory": null,
+      "requires_backpack": false,
+      "warbond": null,
+      "warbond_page": null,
+      "ship_module": "Hangar"
+    },
+    {
+      "id": "40-k-meltagun",
+      "name": "40-K Meltagun",
+      "code": ["down", "left", "up", "left", "left", "down"],
+      "category": "support_weapon",
+      "subcategory": null,
+      "requires_backpack": false,
+      "warbond": null,
+      "warbond_page": null,
+      "ship_module": "Hangar"
+    },
+    {
+      "id": "40-k-meltagun",
+      "name": "40-K Meltagun",
+      "code": ["down", "left", "up", "left", "left", "down"],
+      "category": "support_weapon",
+      "subcategory": "standard",
+      "requires_backpack": false,
+      "cost_type": "medal",
+      "cost_amount": 110,
+      "unlock_level": null,
+      "ship_module": null,
+      "warbond": "Castellan's Creed",
+      "warbond_page": 3
     }
   ]
 }
